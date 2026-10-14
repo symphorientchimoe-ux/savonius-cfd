@@ -1,0 +1,18 @@
+# Vérifie, avant d'ouvrir un compte Oracle, que le script de compilation d'OpenFOAM 8
+# fonctionne sur une machine ARM Ubuntu 22.04 (runner ARM gratuit pour les dépôts publics).
+name: test-compilation-arm
+on: workflow_dispatch
+jobs:
+  compiler:
+    runs-on: ubuntu-22.04-arm
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compilation OpenFOAM 8
+        run: bash calcul_distant/04_oracle_always_free/installer_openfoam8.sh 2>&1 | tail -200
+      - name: Essai de 60 s sur le cas Savonius
+        run: |
+          source $HOME/OpenFOAM/OpenFOAM-8/etc/bashrc || true
+          export FOAM_BASHRC=$HOME/OpenFOAM/OpenFOAM-8/etc/bashrc
+          bash calcul_distant/commun/lancer_cas.sh runs/essai --tsr 0.8 --np 4 --budget 60 --revs 1
+          grep -c "^Time =" runs/essai/log.pimpleFoam.1

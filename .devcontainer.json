@@ -1,0 +1,13 @@
+{
+  "name": "OpenFOAM 8 (Savonius CNDT)",
+  "image": "openfoam/openfoam8-paraview56",
+  "remoteUser": "root",
+  "overrideCommand": true,
+  "hostRequirements": { "cpus": 4 },
+  "postCreateCommand": "echo 'source /opt/openfoam8/etc/bashrc' >> /root/.bashrc && (command -v python3 || (apt-get update && apt-get install -y python3))",
+  "containerEnv": {
+    "OMPI_ALLOW_RUN_AS_ROOT": "1",
+    "OMPI_ALLOW_RUN_AS_ROOT_CONFIRM": "1",
+    "FOAM_BASHRC": "/opt/openfoam8/etc/bashrc"
+  }
+}

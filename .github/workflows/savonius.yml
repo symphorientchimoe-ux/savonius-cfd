@@ -1,0 +1,141 @@
+# Balayage en lambda du rotor Savonius CNDT sur les runners gratuits de GitHub.
+# Dépôt public : runners 4 vCPU / 16 Go, minutes illimitées, 6 h max par job, 20 jobs en parallèle.
+# Chaque lambda tourne dans son propre job. Un job s'arrête proprement avant 6 h, sauvegarde
+# son cas dans un artefact, et le job « suite » relance le workflow pour les lambdas non finis.
+name: savonius-cfd
+
+on:
+  workflow_dispatch:
+    inputs:
+      lambdas:
+        description: 'Liste JSON des lambda (texte), ex. ["0.2","0.4","0.6","0.8","1.0","1.2"]'
+        default: '["0.2","0.4","0.6","0.8","1.0","1.2"]'
+      U:
+        description: 'Vitesse du vent [m/s]'
+        default: '4'
+      revs:
+        description: 'Nombre de tours simulés après la rampe'
+        default: '15'
+      deg:
+        description: 'Rotation par pas de temps [deg]'
+        default: '0.5'
+      budget:
+        description: 'Durée de calcul par passage [s] (< 6 h, marge pour écrire et archiver)'
+        default: '19800'
+      reprise_run_id:
+        description: 'Identifiant du run précédent à reprendre (vide = nouveau calcul)'
+        default: ''
+      passe:
+        description: 'Numéro de passage (géré automatiquement)'
+        default: '1'
+      passes_max:
+        description: 'Nombre maximal de passages enchaînés'
+        default: '6'
+
+permissions:
+  contents: read
+  actions: write
+
+env:
+  IMAGE: openfoam/openfoam8-paraview56
+
+jobs:
+  calcul:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    strategy:
+      fail-fast: false
+      matrix:
+        tsr: ${{ fromJSON(inputs.lambdas) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Récupérer le cas du passage précédent
+        if: inputs.reprise_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: cas-tsr${{ matrix.tsr }}-U${{ inputs.U }}
+          run-id: ${{ inputs.reprise_run_id }}
+          github-token: ${{ github.token }}
+          path: reprise
+
+      - name: Extraire le cas
+        if: inputs.reprise_run_id != ''
+        run: |
+          mkdir -p runs
+          tar xzf reprise/*.tar.gz -C runs
+          ls runs
+
+      - name: Calcul OpenFOAM 8 (conteneur)
+        run: |
+          docker pull -q "$IMAGE"
+          CASE=runs/tsr${{ matrix.tsr }}_U${{ inputs.U }}
+          docker run --rm --user root --entrypoint /bin/bash \
+            -v "$PWD":/w -w /w "$IMAGE" -c "
+              command -v python3 > /dev/null || (apt-get update -qq && apt-get install -y -qq python3 > /dev/null)
+              bash calcul_distant/commun/lancer_cas.sh $CASE --tsr ${{ matrix.tsr }} --U ${{ inputs.U }} \
+                --np \$(nproc) --budget ${{ inputs.budget }} --revs ${{ inputs.revs }} --deg ${{ inputs.deg }} \
+                --archive /w/cas.tar.gz
+              python3 calcul_distant/commun/bilan_couple.py $CASE --csv /w/couple.csv > /w/bilan.txt 2>&1 || true
+              cp $CASE/ETAT /w/ETAT
+              cp $CASE/caseInfo.txt /w/caseInfo.txt
+              tail -40 $CASE/log.pimpleFoam.* > /w/fin_journal.txt
+              chmod -R a+rwX /w
+            "
+          echo "tsr=${{ matrix.tsr }} etat=$(cat ETAT)" >> "$GITHUB_STEP_SUMMARY"
+          cat bilan.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Sauver le cas pour la reprise
+        uses: actions/upload-artifact@v4
+        with:
+          name: cas-tsr${{ matrix.tsr }}-U${{ inputs.U }}
+          path: cas.tar.gz
+          retention-days: 5
+          compression-level: 0
+
+      - name: Sauver le bilan
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bilan-tsr${{ matrix.tsr }}-U${{ inputs.U }}-passe${{ inputs.passe }}
+          path: |
+            ETAT
+            bilan.txt
+            couple.csv
+            caseInfo.txt
+            fin_journal.txt
+          retention-days: 90
+
+  suite:
+    needs: calcul
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bilan-*-passe${{ inputs.passe }}
+          path: bilans
+      - name: Relancer les lambdas non terminés
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          restants=()
+          for d in bilans/*/; do
+            n=$(basename "$d")                       # bilan-tsr0.8-U4-passe1
+            tsr=$(echo "$n" | sed -E 's/^bilan-tsr([^-]+)-U.*/\1/')
+            etat=$(cat "$d/ETAT" 2>/dev/null || echo absent)
+            echo "lambda=$tsr : $etat"
+            [ "$etat" = "a_reprendre" ] && restants+=("\"$tsr\"")
+          done
+          if [ ${#restants[@]} -eq 0 ]; then echo "Rien à relancer."; exit 0; fi
+          passe=$(( ${{ inputs.passe }} + 1 ))
+          if [ "$passe" -gt "${{ inputs.passes_max }}" ]; then
+            echo "Nombre maximal de passages atteint, arrêt."; exit 0
+          fi
+          liste="[$(IFS=,; echo "${restants[*]}")]"
+          echo "Relance du passage $passe pour $liste"
+          gh workflow run savonius.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" \
+            -f lambdas="$liste" -f U="${{ inputs.U }}" -f revs="${{ inputs.revs }}" \
+            -f deg="${{ inputs.deg }}" -f budget="${{ inputs.budget }}" \
+            -f reprise_run_id="${{ github.run_id }}" -f passe="$passe" \
+            -f passes_max="${{ inputs.passes_max }}"
