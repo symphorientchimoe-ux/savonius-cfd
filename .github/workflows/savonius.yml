@@ -20,7 +20,7 @@ on:
         description: 'Rotation par pas de temps [deg]'
         default: '0.5'
       base:
-        description: 'Cas modèle (base ou base_robuste)'
+        description: 'Cas modèle (base, base_robuste ou base_v3b)'
         default: 'base'
       np:
         description: 'Processus MPI par job (0 = tous les vCPU)'

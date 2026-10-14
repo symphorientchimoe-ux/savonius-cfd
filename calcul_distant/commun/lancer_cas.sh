@@ -54,8 +54,9 @@ set +u; source "$FOAM_BASHRC"; set -u
 
 if [ ! -d "$CASE" ]; then
     echo ">> Création du cas $CASE (lambda=$TSR, U=$U, np=$NP)"
+    # maillage : celui nommé dans <base>/MAILLAGE, sinon geom/savonius2D.msh (voir mkcase.py)
     python3 "$ROOT/scripts/mkcase.py" "$CASE" --tsr "$TSR" --U "$U" --np "$NP" \
-        --msh "$ROOT/geom/savonius2D.msh" "${EXTRA[@]}" || exit 1
+        "${EXTRA[@]}" || exit 1
 else
     echo ">> Reprise du cas $CASE depuis le dernier temps écrit"
 fi

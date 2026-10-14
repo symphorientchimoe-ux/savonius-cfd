@@ -1,0 +1,6 @@
+Variante base_v3b : réglages numériques de base_robuste (upwind pour k et omega, 12 boucles
+externes, 3 correcteurs de pression, relaxation 0,6) sur le maillage geom/savonius2D_v3b.msh :
+  gmsh -3 -setnumber tm 0.004 -setnumber hb 0.0025 -setnumber htip 0.0025 -format msh2 savonius2D.geo
+Pale modélisée de 4 mm d'épaisseur (au lieu de 1,5 mm) avec bout arrondi de 2 mm de rayon,
+mailles de 2,5 mm aux parois : plus petite maille 0,89 mm au lieu de 0,43 mm (Courant divisé par ~2),
+104 785 cellules au lieu de 152 779.

@@ -13,7 +13,11 @@ xmin = -7; xmax = 20; ymax = 7;   // 5D amont, 15D aval, 10D de large
 
 // tailles de maille (modifiables en ligne de commande : -setnumber hb 0.002)
 DefineConstant[ hb = 0.0015, htip = 0.0015, hami = 0.02, hfar = 0.30, hwake = 0.07,
-                bl1 = 1.5e-4, blT = 0.003, blR = 1.2, useBL = 0, ext = 1 ];
+                bl1 = 1.5e-4, blT = 0.003, blR = 1.2, useBL = 0, ext = 1, tm = 0 ];
+// tm > 0 : epaisseur de pale modelisee (et diametre du bout arrondi), pour grossir les mailles du bout
+If (tm > 0)
+  t = tm;
+EndIf
 
 d = Sqrt(Rb^2 - (c/2)^2);
 blades[] = {};

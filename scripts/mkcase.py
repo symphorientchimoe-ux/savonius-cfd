@@ -32,8 +32,13 @@ def main():
     ap.add_argument("--Ti", type=float, default=0.01, help="intensité de turbulence en entrée")
     ap.add_argument("--tramp", type=float, default=1.0, help="durée de la rampe vent + rotation [s]")
     ap.add_argument("--base", default="base", help="cas modèle à copier (dossier sous la racine du projet)")
-    ap.add_argument("--msh", default=str(ROOT / "geom/savonius2D.msh"))
+    ap.add_argument("--msh", default=None,
+                    help="maillage gmsh ; défaut : celui nommé dans <base>/MAILLAGE, sinon geom/savonius2D.msh")
     a = ap.parse_args()
+    if a.msh is None:
+        choix = ROOT / a.base / "MAILLAGE"
+        nom = choix.read_text().strip() if choix.exists() else "savonius2D.msh"
+        a.msh = str(ROOT / "geom" / nom)
 
     case = pathlib.Path(a.case).resolve()
     if case.exists():
