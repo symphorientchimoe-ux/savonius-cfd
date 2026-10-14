@@ -31,13 +31,14 @@ def main():
     ap.add_argument("--np", type=int, default=3, help="nombre de processus MPI")
     ap.add_argument("--Ti", type=float, default=0.01, help="intensité de turbulence en entrée")
     ap.add_argument("--tramp", type=float, default=1.0, help="durée de la rampe vent + rotation [s]")
+    ap.add_argument("--base", default="base", help="cas modèle à copier (dossier sous la racine du projet)")
     ap.add_argument("--msh", default=str(ROOT / "geom/savonius2D.msh"))
     a = ap.parse_args()
 
     case = pathlib.Path(a.case).resolve()
     if case.exists():
         raise SystemExit(f"{case} existe déjà")
-    shutil.copytree(ROOT / "base", case)
+    shutil.copytree(ROOT / a.base, case)
 
     omega = a.tsr * a.U / R
     dt = math.radians(a.deg) / omega
@@ -82,7 +83,7 @@ def main():
     (case / "caseInfo.txt").write_text(
         f"tsr {a.tsr}\nU {a.U}\nomega {omega:.6g}\nR {R}\ndeg_per_step {a.deg}\n"
         f"dt {dt:.8g}\nperiod {period:.6g}\nrevs {a.revs}\nendTime {end:.6g}\n"
-        f"tramp {a.tramp}\nnp {a.np}\nTi {a.Ti}\nmsh {a.msh}\n")
+        f"tramp {a.tramp}\nnp {a.np}\nTi {a.Ti}\nmsh {a.msh}\nbase {a.base}\n")
     print(f"{case.name}: omega={omega:.4g} rad/s dt={dt:.4g} s T={period:.4g} s end={end:.4g} s")
 
 
