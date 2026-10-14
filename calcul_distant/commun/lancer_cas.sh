@@ -72,7 +72,8 @@ LOG="log.pimpleFoam.$n"
 echo ">> pimpleFoam sur $NP processus, budget ${BUDGET} s, journal $LOG"
 t0=$(date +%s)
 if [ "$NP" -gt 1 ]; then
-    mpirun -np "$NP" pimpleFoam -parallel > "$LOG" 2>&1
+    # --oversubscribe : les runners cloud annoncent des vCPU (hyperthreads) que MPI ne compte pas comme cœurs
+    mpirun --oversubscribe -np "$NP" pimpleFoam -parallel > "$LOG" 2>&1
 else
     pimpleFoam > "$LOG" 2>&1
 fi

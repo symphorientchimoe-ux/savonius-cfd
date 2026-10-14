@@ -19,6 +19,9 @@ on:
       deg:
         description: 'Rotation par pas de temps [deg]'
         default: '0.5'
+      np:
+        description: 'Processus MPI par job (0 = tous les vCPU)'
+        default: '0'
       budget:
         description: 'Durée de calcul par passage [s] (< 6 h, marge pour écrire et archiver)'
         default: '19800'
@@ -70,11 +73,12 @@ jobs:
         run: |
           docker pull -q "$IMAGE"
           CASE=runs/tsr${{ matrix.tsr }}_U${{ inputs.U }}
+          NP=${{ inputs.np }}; [ "$NP" = 0 ] && NP=$(nproc)
           docker run --rm --user root --entrypoint /bin/bash \
             -v "$PWD":/w -w /w "$IMAGE" -c "
               command -v python3 > /dev/null || (apt-get update -qq && apt-get install -y -qq python3 > /dev/null)
               bash calcul_distant/commun/lancer_cas.sh $CASE --tsr ${{ matrix.tsr }} --U ${{ inputs.U }} \
-                --np \$(nproc) --budget ${{ inputs.budget }} --revs ${{ inputs.revs }} --deg ${{ inputs.deg }} \
+                --np $NP --budget ${{ inputs.budget }} --revs ${{ inputs.revs }} --deg ${{ inputs.deg }} \
                 --archive /w/cas.tar.gz
               python3 calcul_distant/commun/bilan_couple.py $CASE --csv /w/couple.csv > /w/bilan.txt 2>&1 || true
               cp $CASE/ETAT /w/ETAT
@@ -136,6 +140,6 @@ jobs:
           echo "Relance du passage $passe pour $liste"
           gh workflow run savonius.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" \
             -f lambdas="$liste" -f U="${{ inputs.U }}" -f revs="${{ inputs.revs }}" \
-            -f deg="${{ inputs.deg }}" -f budget="${{ inputs.budget }}" \
+            -f deg="${{ inputs.deg }}" -f np="${{ inputs.np }}" -f budget="${{ inputs.budget }}" \
             -f reprise_run_id="${{ github.run_id }}" -f passe="$passe" \
             -f passes_max="${{ inputs.passes_max }}"
