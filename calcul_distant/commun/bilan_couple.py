@@ -61,6 +61,9 @@ def main():
     if not serie:
         sys.exit("aucune donnée de couple")
     t_fin = serie[-1][0]
+    if "static" in info:
+        bilan_statique(case, info, serie, qref, a)
+        return
     tours_faits = max(0.0, (t_fin - tramp) / T)
     print(f"cas {case.name} : lambda={tsr} U={U} m/s, {len(serie)} pas, t={t_fin:.4g} s, "
           f"{tours_faits:.2f} tours après la rampe")
@@ -89,6 +92,27 @@ def main():
     if n >= 2:
         ecart = abs(cm_tours[-1] - cm_tours[-2]) / max(abs(cm), 1e-9)
         print(f"écart entre les deux derniers tours : {100 * ecart:.1f} %")
+
+
+def bilan_statique(case, info, serie, qref, a):
+    """Rotor bloqué : Cm moyen sur les dernières secondes (écoulement instationnaire, lâcher tourbillonnaire)."""
+    tramp, t_fin = float(info["tramp"]), serie[-1][0]
+    print(f"cas {case.name} : statique, angle {info['static']} deg, U={info['U']} m/s, {len(serie)} pas, "
+          f"t={t_fin:.4g} s ({t_fin - tramp:.2f} s après la rampe)")
+    if a.csv:
+        with open(a.csv, "w") as f:
+            f.write("t,Mz,Cm\n")
+            for t, m in serie:
+                f.write(f"{t:.8g},{m:.6g},{m/qref:.6g}\n")
+    secs = [sum(v) / len(v) / qref for v in
+            ([m for t, m in serie if tramp + i < t <= tramp + i + 1] for i in range(int(t_fin - tramp))) if v]
+    print("Cm moyen par seconde : " + " ".join(f"{c:.4f}" for c in secs))
+    t0 = max(tramp + 4.0, t_fin - 6.0)
+    vals = [m / qref for t, m in serie if t > t0]
+    if t_fin - t0 < 2 or not vals:
+        print("moins de 2 s exploitables : pas encore de moyenne")
+        return
+    print(f"Cm statique moyen sur t > {t0:.2f} s = {sum(vals) / len(vals):.4f} (min {min(vals):.4f}, max {max(vals):.4f})")
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@
 Exemple :
     python3 mkcase.py --tsr 0.8 --U 4 --deg 0.5 --revs 15 --np 3 runs/tsr0.80
 """
-import argparse, math, os, shutil, subprocess, pathlib
+import argparse, math, os, re, shutil, subprocess, pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 # FOAM_BASHRC permet de pointer vers une autre installation (conteneur Docker : /opt/openfoam8/etc/bashrc)
@@ -32,6 +32,10 @@ def main():
     ap.add_argument("--Ti", type=float, default=0.01, help="intensité de turbulence en entrée")
     ap.add_argument("--tramp", type=float, default=1.0, help="durée de la rampe vent + rotation [s]")
     ap.add_argument("--base", default="base", help="cas modèle à copier (dossier sous la racine du projet)")
+    ap.add_argument("--static", type=float, default=None,
+                    help="couple statique : rotor bloqué à cet angle [deg] (tsr ignoré)")
+    ap.add_argument("--tstat", type=float, default=10.0, help="durée simulée après la rampe en statique [s]")
+    ap.add_argument("--dt", type=float, default=0.00185441, help="pas de temps en statique [s] (celui de lambda = 0,8)")
     ap.add_argument("--msh", default=None,
                     help="maillage gmsh ; défaut : celui nommé dans <base>/MAILLAGE, sinon geom/savonius2D.msh")
     a = ap.parse_args()
@@ -45,11 +49,19 @@ def main():
         raise SystemExit(f"{case} existe déjà")
     shutil.copytree(ROOT / a.base, case)
 
-    omega = a.tsr * a.U / R
-    dt = math.radians(a.deg) / omega
-    period = 2 * math.pi / omega
-    end = a.tramp + a.revs * period
-    steps_per_rev = round(360 / a.deg)
+    if a.static is None:
+        omega = a.tsr * a.U / R
+        dt = math.radians(a.deg) / omega
+        period = 2 * math.pi / omega
+        end = a.tramp + a.revs * period
+        steps_per_rev = round(360 / a.deg)
+    else:
+        # rotor bloqué : le maillage tourne de l'angle voulu pendant les 0,1 premières secondes
+        # (vent encore presque nul), puis reste immobile
+        a.tsr, omega, dt = 0.0, 0.0, a.dt
+        period, end = a.tstat, a.tramp + a.tstat
+        a.revs = 0
+        steps_per_rev = 4 * round(1.0 / dt)       # une écriture par seconde simulée
     k = 1.5 * (a.Ti * a.U) ** 2
     om = k / (10 * NU)
 
@@ -68,6 +80,14 @@ def main():
         for key, val in d.items():
             s = s.replace(key, val)
         p.write_text(s)
+    if a.static is not None:
+        tp, gap = 0.1, 1e-4
+        w = math.radians(a.static) / (tp + gap / 2)
+        p = case / "constant/dynamicMeshDict"
+        txt, n = re.subn(r"omega\s+table\s*\(.*?\);", f"omega table ((0 {w:.8g}) ({tp} {w:.8g}) ({tp + gap:g} 0) (1e6 0));",
+                         p.read_text())
+        assert n == 1, "ligne omega introuvable dans dynamicMeshDict"
+        p.write_text(txt)
 
     of(f"gmshToFoam {a.msh}", case)
     bnd = "constant/polyMesh/boundary"
@@ -88,7 +108,8 @@ def main():
     (case / "caseInfo.txt").write_text(
         f"tsr {a.tsr}\nU {a.U}\nomega {omega:.6g}\nR {R}\ndeg_per_step {a.deg}\n"
         f"dt {dt:.8g}\nperiod {period:.6g}\nrevs {a.revs}\nendTime {end:.6g}\n"
-        f"tramp {a.tramp}\nnp {a.np}\nTi {a.Ti}\nmsh {a.msh}\nbase {a.base}\n")
+        f"tramp {a.tramp}\nnp {a.np}\nTi {a.Ti}\nmsh {a.msh}\nbase {a.base}\n"
+        + (f"static {a.static}\n" if a.static is not None else ""))
     print(f"{case.name}: omega={omega:.4g} rad/s dt={dt:.4g} s T={period:.4g} s end={end:.4g} s")
 
 

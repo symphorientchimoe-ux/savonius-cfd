@@ -59,6 +59,23 @@ if [ ! -d "$CASE" ]; then
         "${EXTRA[@]}" || exit 1
 else
     echo ">> Reprise du cas $CASE depuis le dernier temps écrit"
+    # --revs à la reprise : prolonge (ou raccourcit) le calcul en recalculant endTime
+    for ((i=0; i<${#EXTRA[@]}; i+=2)); do
+        if [ "${EXTRA[$i]}" = "--revs" ]; then
+            python3 - "$CASE" "${EXTRA[$((i+1))]}" <<'PY'
+import pathlib, re, subprocess, sys
+case, revs = pathlib.Path(sys.argv[1]), float(sys.argv[2])
+info = dict(l.split(" ", 1) for l in (case / "caseInfo.txt").read_text().splitlines() if " " in l)
+if float(info["revs"]) != revs:
+    end = float(info["tramp"]) + revs * float(info["period"])
+    subprocess.run(["foamDictionary", str(case / "system/controlDict"), "-entry", "endTime", "-set", f"{end:.6g}"],
+                   check=True, stdout=subprocess.DEVNULL)
+    info["revs"], info["endTime"] = f"{revs:g}", f"{end:.6g}"
+    (case / "caseInfo.txt").write_text("".join(f"{k} {v.strip()}\n" for k, v in info.items()))
+    print(f">> nombre de tours porté à {revs:g} : endTime = {end:.6g} s")
+PY
+        fi
+    done
 fi
 
 cd "$CASE" || exit 1
@@ -88,7 +105,9 @@ LAST=$(ls -1 "$TDIR" | grep -E '^[0-9.eE+-]+$' | sort -g | tail -1)
 END=$(foamDictionary system/controlDict -entry endTime -value)
 if [ "$rc" -ne 0 ]; then
     echo erreur > ETAT        # divergence ou plantage : ne pas relancer à l'aveugle
-elif python3 -c "import sys; sys.exit(0 if float('$LAST') >= 0.999*float('$END') else 1)"; then
+# fin atteinte : dernier temps écrit, ou dernier pas calculé (endTime n'est pas toujours un temps d'écriture)
+elif LASTRUN=$(grep -E '^Time = ' "$LOG" | tail -1 | awk '{print $3}'); \
+     python3 -c "import sys; sys.exit(0 if max(float('$LAST'), float('${LASTRUN:-0}')) >= 0.9999*float('$END') else 1)"; then
     echo termine > ETAT
 else
     echo a_reprendre > ETAT

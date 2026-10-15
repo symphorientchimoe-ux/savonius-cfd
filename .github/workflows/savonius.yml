@@ -37,6 +37,12 @@ on:
       passes_max:
         description: 'Nombre maximal de passages enchaînés'
         default: '6'
+      etiquette:
+        description: 'Suffixe des noms d artefacts pour distinguer une série (vide = aucun)'
+        default: ''
+      mode:
+        description: 'rotation (lambdas = vitesses spécifiques) ou statique (lambdas = angles du rotor bloqué, en degrés)'
+        default: 'rotation'
 
 permissions:
   contents: read
@@ -44,6 +50,7 @@ permissions:
 
 env:
   IMAGE: openfoam/openfoam8-paraview56
+  SUFFIXE: ${{ inputs.etiquette != '' && format('-{0}', inputs.etiquette) || '' }}
 
 jobs:
   calcul:
@@ -60,7 +67,7 @@ jobs:
         if: inputs.reprise_run_id != ''
         uses: actions/download-artifact@v4
         with:
-          name: cas-tsr${{ matrix.tsr }}-U${{ inputs.U }}
+          name: cas-tsr${{ matrix.tsr }}-U${{ inputs.U }}${{ env.SUFFIXE }}
           run-id: ${{ inputs.reprise_run_id }}
           github-token: ${{ github.token }}
           path: reprise
@@ -77,10 +84,12 @@ jobs:
           docker pull -q "$IMAGE"
           CASE=runs/tsr${{ matrix.tsr }}_U${{ inputs.U }}
           NP=${{ inputs.np }}; [ "$NP" = 0 ] && NP=$(nproc)
+          if [ "${{ inputs.mode }}" = statique ]; then TSR=0; STAT="--static ${{ matrix.tsr }}"
+          else TSR=${{ matrix.tsr }}; STAT=""; fi
           docker run --rm --user root --entrypoint /bin/bash \
             -v "$PWD":/w -w /w "$IMAGE" -c "
               command -v python3 > /dev/null || (apt-get update -qq && apt-get install -y -qq python3 > /dev/null)
-              bash calcul_distant/commun/lancer_cas.sh $CASE --tsr ${{ matrix.tsr }} --U ${{ inputs.U }} \
+              bash calcul_distant/commun/lancer_cas.sh $CASE --tsr $TSR $STAT --U ${{ inputs.U }} \
                 --np $NP --budget ${{ inputs.budget }} --revs ${{ inputs.revs }} --deg ${{ inputs.deg }} --base ${{ inputs.base }} \
                 --archive /w/cas.tar.gz
               python3 calcul_distant/commun/bilan_couple.py $CASE --csv /w/couple.csv > /w/bilan.txt 2>&1 || true
@@ -95,7 +104,7 @@ jobs:
       - name: Sauver le cas pour la reprise
         uses: actions/upload-artifact@v4
         with:
-          name: cas-tsr${{ matrix.tsr }}-U${{ inputs.U }}
+          name: cas-tsr${{ matrix.tsr }}-U${{ inputs.U }}${{ env.SUFFIXE }}
           path: cas.tar.gz
           retention-days: 5
           compression-level: 0
@@ -104,7 +113,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bilan-tsr${{ matrix.tsr }}-U${{ inputs.U }}-passe${{ inputs.passe }}
+          name: bilan-tsr${{ matrix.tsr }}-U${{ inputs.U }}${{ env.SUFFIXE }}-passe${{ inputs.passe }}
           path: |
             ETAT
             bilan.txt
@@ -145,4 +154,4 @@ jobs:
             -f lambdas="$liste" -f U="${{ inputs.U }}" -f revs="${{ inputs.revs }}" \
             -f deg="${{ inputs.deg }}" -f np="${{ inputs.np }}" -f base="${{ inputs.base }}" -f budget="${{ inputs.budget }}" \
             -f reprise_run_id="${{ github.run_id }}" -f passe="$passe" \
-            -f passes_max="${{ inputs.passes_max }}"
+            -f passes_max="${{ inputs.passes_max }}" -f etiquette="${{ inputs.etiquette }}" -f mode="${{ inputs.mode }}"
