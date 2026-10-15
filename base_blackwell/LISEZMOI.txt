@@ -1,0 +1,2 @@
+Cas modèle du rotor de validation de Blackwell et al. 1977 (2 godets, c = 0,5 m, s/c = 0,15, sans arbre).
+Réglages de base_v3b ; maillage geom/savonius2D_blackwell.msh (geom/blackwell2D.geo) ; rayon dans RAYON.

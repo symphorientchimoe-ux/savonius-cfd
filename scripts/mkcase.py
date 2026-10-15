@@ -39,6 +39,10 @@ def main():
     ap.add_argument("--msh", default=None,
                     help="maillage gmsh ; défaut : celui nommé dans <base>/MAILLAGE, sinon geom/savonius2D.msh")
     a = ap.parse_args()
+    global R
+    rayon = ROOT / a.base / "RAYON"          # rayon en bout de pale propre au cas modèle (rotor de validation)
+    if rayon.exists():
+        R = float(rayon.read_text().split()[0])
     if a.msh is None:
         choix = ROOT / a.base / "MAILLAGE"
         nom = choix.read_text().strip() if choix.exists() else "savonius2D.msh"
