@@ -9,7 +9,8 @@ t  = 0.0015;   // epaisseur tole 15/10 [m]
 rs = 0.0225;   // rayon de l'arbre [m]
 Rr = 0.90;     // rayon de la zone tournante (AMI) [m]
 dz = 0.1;      // epaisseur d'extrusion 2D [m]
-xmin = -7; xmax = 20; ymax = 7;   // 5D amont, 15D aval, 10D de large
+// domaine : 5D amont, 15D aval, 10D de large (modifiable : -setnumber ymax 14)
+DefineConstant[ xmin = -7, xmax = 20, ymax = 7 ];
 
 // tailles de maille (modifiables en ligne de commande : -setnumber hb 0.002)
 DefineConstant[ hb = 0.0015, htip = 0.0015, hami = 0.02, hfar = 0.30, hwake = 0.07,

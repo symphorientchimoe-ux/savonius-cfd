@@ -1,0 +1,3 @@
+Variante base_v3b_rke : réglages et maillage de base_v3b, modèle de turbulence k-epsilon realizable
+(au lieu de k-omega SST) avec lois de paroi, pour contrôler la sensibilité au modèle.
+Epsilon en entrée = Cmu k omega (même k et même nut/nu = 10 que les cas SST).

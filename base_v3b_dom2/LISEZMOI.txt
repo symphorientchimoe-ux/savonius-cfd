@@ -1,0 +1,4 @@
+Variante base_v3b_dom2 : réglages de base_v3b, domaine élargi pour contrôler l'effet du blocage.
+  gmsh -3 -setnumber tm 0.004 -setnumber hb 0.0025 -setnumber htip 0.0025 \
+       -setnumber xmin -14 -setnumber xmax 34 -setnumber ymax 14 -format msh2 savonius2D.geo
+10D amont, 25D aval, 20D de large (blocage D/largeur 4,8 % au lieu de 9,7 %).

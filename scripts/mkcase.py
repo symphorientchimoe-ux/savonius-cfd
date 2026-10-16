@@ -74,12 +74,15 @@ def main():
         "0/U": {"UINF": f"{a.U:g}", "TRAMP": f"{a.tramp:g}"},
         "0/k": {"KINF": f"{k:.6g}"},
         "0/omega": {"OMINF": f"{om:.6g}"},
+        "0/epsilon": {"EPSINF": f"{0.09 * k * om:.6g}"},   # cas modèles en k-epsilon
         "system/controlDict": {"ENDTIME": f"{end:.6g}", "DELTAT": f"{dt:.8g}",
                                "WRITESTEPS": str(steps_per_rev // 4)},
         "system/decomposeParDict": {"NPROCS": str(a.np)},
     }
     for f, d in subs.items():
         p = case / f
+        if not p.exists():          # omega ou epsilon selon le modèle de turbulence
+            continue
         s = p.read_text()
         for key, val in d.items():
             s = s.replace(key, val)
