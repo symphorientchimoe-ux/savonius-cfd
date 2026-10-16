@@ -1,0 +1,5 @@
+Cas 3D du demi-rotor Savonius CNDT (z = 0 : plan de symétrie à mi-hauteur ; pales de z = 0 à 0,5 m).
+Pales sans épaisseur (parois minces : patches pales et pales_slave), arbre Ø 45 mm, zone tournante r = 0,9 m, h = 0,8 m.
+Surfaces : python3 -I scripts/stl3d.py base3d/constant/triSurface [--plaque D] (plaque d'extrémité à compléter dans snappyHexMeshDict).
+Maillage : ./Allmesh NPALE NP. Test du 16/10 : NPALE = 4 -> 367 556 cellules ; NPALE = 5 visé (mailles de 8 mm, y+ de l'ordre de 30, lois de paroi).
+Les autres réglages (schémas, PIMPLE, k-omega SST, rampe) sont ceux de base_v3b ; mkcase.py remplit les jokers.

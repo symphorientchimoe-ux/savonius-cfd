@@ -1,0 +1,31 @@
+/*--------------------------------*- C++ -*----------------------------------*\\
+  =========                 |
+  \\\\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\\\    /   O peration     | Website:  https://openfoam.org
+    \\\\  /    A nd           | Version:  8
+     \\\\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+
+// Domaine : 5D amont, 15D aval, 10D de large (comme en 2D) ; demi-hauteur : z = 0 (symétrie) à 3 m
+convertToMeters 1;
+vertices
+(
+    (-7 -7 0) (20 -7 0) (20 7 0) (-7 7 0)
+    (-7 -7 3) (20 -7 3) (20 7 3) (-7 7 3)
+);
+blocks ( hex (0 1 2 3 4 5 6 7) (NX NY NZ) simpleGrading (1 1 1) );
+boundary
+(
+    inlet  { type patch; faces ((0 4 7 3)); }
+    outlet { type patch; faces ((1 2 6 5)); }
+    sides  { type symmetry; faces ((0 1 5 4) (3 7 6 2)); }
+    top    { type symmetry; faces ((4 5 6 7)); }
+    sym    { type symmetryPlane; faces ((0 3 2 1)); }
+);

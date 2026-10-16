@@ -1,0 +1,20 @@
+#!/bin/sh
+# Maillage 3D du demi-rotor : Allmesh [NPALE=5] [NP=1]
+# NPALE : niveau de raffinement près des pales (fond de 0,25 m : 4 -> 16 mm, 5 -> 8 mm, 6 -> 4 mm)
+cd ${0%/*} || exit 1
+NPALE=${1:-5}; NP=${2:-1}
+sed -i "s/NX NY NZ/108 56 12/" system/blockMeshDict
+sed -i "s/NPALE/$NPALE/g" system/snappyHexMeshDict
+blockMesh > log.blockMesh 2>&1 || exit 1
+if [ "$NP" -gt 1 ]; then
+    foamDictionary system/decomposeParDict -entry numberOfSubdomains -set "$NP" > /dev/null
+    decomposePar -force > log.decomposeMesh 2>&1
+    mpirun -np "$NP" snappyHexMesh -overwrite -parallel > log.snappyHexMesh 2>&1 || exit 1
+    reconstructParMesh -constant > log.reconstructParMesh 2>&1; rm -rf processor*
+else
+    snappyHexMesh -overwrite > log.snappyHexMesh 2>&1 || exit 1
+fi
+createBaffles -overwrite > log.createBaffles 2>&1 || exit 1
+renumberMesh -noFields -overwrite > log.renumberMesh 2>&1
+checkMesh > log.checkMesh 2>&1
+grep -E "cells:|Mesh OK|Failed" log.checkMesh
