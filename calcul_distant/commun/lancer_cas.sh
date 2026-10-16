@@ -80,6 +80,10 @@ fi
 
 cd "$CASE" || exit 1
 
+# noms de dossiers de temps : assez de chiffres pour que la reprise retrouve le dernier temps écrit
+# (avec 8 chiffres, OpenFOAM écrit 6.400776487 mais cherche 6.4007765 à la reprise)
+foamDictionary system/controlDict -entry timePrecision -set 12 > /dev/null
+
 # arrêt propre au bout de BUDGET s (temps d'horloge depuis le lancement de ce run)
 foamDictionary system/controlDict -entry functions/stopAtClock -remove > /dev/null 2>&1
 foamDictionary system/controlDict -entry functions/stopAtClock -add \
