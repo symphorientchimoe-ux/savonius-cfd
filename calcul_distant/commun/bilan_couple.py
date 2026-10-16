@@ -25,10 +25,9 @@ def lire_moments(case):
     """Renvoie [(t, Mz)] trié, les reprises écrasant les pas déjà calculés."""
     data = {}
     dossiers = sorted((case / "postProcessing/forces").iterdir(), key=lambda d: float(d.name))
-    for d in dossiers:
-        f = d / "forces.dat"
-        if not f.exists():
-            continue
+    # forces.dat, plus forces_<t>.dat quand une reprise repart d'un temps déjà utilisé
+    fichiers = [f for d in dossiers for f in sorted(d.glob("forces*.dat"), key=lambda f: f.stat().st_mtime)]
+    for f in fichiers:
         for ligne in f.read_text().splitlines():
             if ligne.startswith("#") or not ligne.strip():
                 continue
