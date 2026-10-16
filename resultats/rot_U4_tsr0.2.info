@@ -1,0 +1,14 @@
+tsr 0.2
+U 4.0
+omega 1.17647
+R 0.68
+deg_per_step 0.125
+dt 0.0018544123
+period 5.34071
+revs 15.0
+endTime 81.1106
+tramp 1.0
+np 2
+Ti 0.01
+msh /w/geom/savonius2D_v3b.msh
+base base_v3b

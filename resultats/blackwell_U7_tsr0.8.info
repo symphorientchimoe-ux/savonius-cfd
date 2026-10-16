@@ -1,0 +1,14 @@
+tsr 0.8
+U 7.0
+omega 12.1081
+R 0.4625
+deg_per_step 0.5
+dt 0.00072072748
+period 0.518924
+revs 15.0
+endTime 8.78386
+tramp 1.0
+np 2
+Ti 0.01
+msh /w/geom/savonius2D_blackwell.msh
+base base_blackwell
