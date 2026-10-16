@@ -14,7 +14,8 @@ DefineConstant[ xmin = -7, xmax = 20, ymax = 7 ];
 
 // tailles de maille (modifiables en ligne de commande : -setnumber hb 0.002)
 DefineConstant[ hb = 0.0015, htip = 0.0015, hami = 0.02, hfar = 0.30, hwake = 0.07,
-                bl1 = 1.5e-4, blT = 0.003, blR = 1.2, useBL = 0, ext = 1, tm = 0 ];
+                bl1 = 1.5e-4, blT = 0.003, blR = 1.2, useBL = 0, ext = 1, tm = 0,
+                blQuads = 1, blArbre = 0 ];
 // tm > 0 : epaisseur de pale modelisee (et diametre du bout arrondi), pour grossir les mailles du bout
 If (tm > 0)
   t = tm;
@@ -86,9 +87,13 @@ Background Field = 5;
 
 If (useBL)
 Field[10] = BoundaryLayer;
-Field[10].CurvesList = {faceCurves()};
+If (blArbre)
+  Field[10].CurvesList = {bladeCurves()};   // couche limite aussi sur l'arbre
+Else
+  Field[10].CurvesList = {faceCurves()};
+EndIf
 Field[10].Size = bl1; Field[10].Ratio = blR; Field[10].Thickness = blT;
-Field[10].Quads = 1;
+Field[10].Quads = blQuads;
 BoundaryLayer Field = 10;
 EndIf
 

@@ -1,0 +1,5 @@
+Variante base_v3bl : réglages de base_v3b, maillage à couches limites le long des pales et de l'arbre.
+  gmsh -3 -setnumber tm 0.004 -setnumber hb 0.0025 -setnumber htip 0.0025 -setnumber useBL 1 \
+       -setnumber bl1 1e-4 -setnumber blT 0.003 -setnumber blArbre 1 -format msh2 savonius2D.geo
+Première couche de 0,1 mm (y+ visé de l'ordre de 1), raison 1,2, épaisseur 3 mm ; 122 925 cellules, checkMesh OK.
+Couches limitées aux faces des pales (blArbre = 0) : cellules retournées à la jonction pale-arbre.
