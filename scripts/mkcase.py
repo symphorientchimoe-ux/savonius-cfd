@@ -96,9 +96,13 @@ def main():
         assert n == 1, "ligne omega introuvable dans dynamicMeshDict"
         p.write_text(txt)
 
-    of(f"gmshToFoam {a.msh}", case)
+    if (case / "constant/polyMesh/boundary").exists():
+        cmds = []                   # maillage OpenFOAM déjà prêt dans le cas modèle (ex. tranche du maillage 3D)
+    else:
+        of(f"gmshToFoam {a.msh}", case)
+        cmds = None
     bnd = "constant/polyMesh/boundary"
-    for cmd in [
+    for cmd in cmds if cmds is not None else [
         f"foamDictionary {bnd} -entry entry0/frontAndBack/type -set empty",
         f"foamDictionary {bnd} -entry entry0/sides/type -set symmetry",
         f"foamDictionary {bnd} -entry entry0/blades/type -set wall",

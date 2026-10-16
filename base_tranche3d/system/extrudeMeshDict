@@ -1,0 +1,27 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  8
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      extrudeMeshDict;
+}
+
+// Tranche 2D tirée du maillage 3D : on extrude le plan de symétrie z = 0 sur 0,1 m
+constructFrom   patch;
+sourceCase      "../maillage3d";
+sourcePatches   (sym);
+exposedPatchName top;      // doit exister dans le maillage source
+flipNormals     false;
+extrudeModel    linearNormal;
+nLayers         1;
+expansionRatio  1.0;
+linearNormalCoeffs { thickness 0.1; }
+mergeFaces      false;
+mergeTol        0;

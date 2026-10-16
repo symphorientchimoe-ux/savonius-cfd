@@ -15,6 +15,7 @@ else
     snappyHexMesh -overwrite > log.snappyHexMesh 2>&1 || exit 1
 fi
 createBaffles -overwrite > log.createBaffles 2>&1 || exit 1
+mergeOrSplitBaffles -split -overwrite > log.mergeOrSplitBaffles 2>&1 || exit 1   # dédouble les points des parois minces et de l AMI
 renumberMesh -noFields -overwrite > log.renumberMesh 2>&1
 checkMesh > log.checkMesh 2>&1
 grep -E "cells:|Mesh OK|Failed" log.checkMesh

@@ -1,0 +1,6 @@
+Tranche 2D tirée du maillage 3D (base3d, NPALE = 5) : on extrude le plan de symétrie z = 0 sur 0,1 m.
+Même résolution dans le plan que le calcul 3D (mailles d'environ 8 mm le long des pales, 3 cm dans la zone tournante).
+Sert à : (1) mesurer le y+ du maillage 3D à faible coût ; (2) donner le Cp 2D de référence avec le même maillage,
+pour isoler l'effet 3D (rapport Cp 3D / Cp tranche) ; (3) comparer avec v3b et v3bl.
+Fabrication : base3d/Allmesh 5 4, puis extrudeMesh (system/extrudeMeshDict, sourceCase = le cas 3D maillé),
+topoSet (zone tournante = région intérieure à l'AMI), patches sym et top passés en empty. 20 532 cellules.
