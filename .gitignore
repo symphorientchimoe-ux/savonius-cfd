@@ -1,3 +1,4 @@
 runs/
 *.tar.gz
 __pycache__/
+base3d_extr/constant/polyMesh/

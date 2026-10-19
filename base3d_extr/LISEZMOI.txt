@@ -1,0 +1,7 @@
+Demi-rotor 3D (plan de symétrie z = 0 à mi-hauteur) maillé par extrusion du plan 2D à couches limites :
+  gmsh -3 -format msh2 geom/savonius3D_plan.geo -o plan.msh      (mêmes tailles que base_v3blg_dom2)
+  bash scripts/maillage3d_extrusion.sh plan.msh base3d_extr 20 8 10
+Pales de z = 0 à 0,5 m, zone tournante (cellZone rotor) jusqu'à 0,8 m, domaine jusqu'à 3 m ; 1 977 708 cellules.
+Patches : inlet outlet sides top (symmetry) sym (symmetryPlane) blades AMI1 AMI2. Le maillage (≈ 2 M cellules) n'est pas
+dans le dépôt : il se refait en 2 minutes. Les réglages numériques sont ceux de base_v3bl_dom2 (OpenFOAM 8).
+Pour le couple : bilan_couple.py --dz 0.5 (demi-hauteur des pales) ; Cm et Cp du rotor entier = ceux du demi-rotor.

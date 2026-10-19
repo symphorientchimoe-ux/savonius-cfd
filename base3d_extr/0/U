@@ -1,0 +1,66 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  8
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volVectorField;
+    location    "0";
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+Uinf            UINF;
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (0 0 0);
+
+boundaryField
+{
+    inlet
+    {
+        // rampe lineaire de 0 a Uinf sur TRAMP s (demarrage progressif)
+        type            uniformFixedValue;
+        uniformValue    table ((0 (0 0 0)) (TRAMP ($Uinf 0 0)));
+        value           uniform (0 0 0);
+    }
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform (0 0 0);
+        value           uniform (0 0 0);
+    }
+    blades
+    {
+        type            movingWallVelocity;
+        value           uniform (0 0 0);
+    }
+    sym
+    {
+        type            symmetryPlane;
+    }
+    top
+    {
+        type            symmetry;
+    }
+    sides
+    {
+        type            symmetry;
+    }
+    AMI1
+    {
+        type            cyclicAMI;
+        value           $internalField;
+    }
+    AMI2
+    {
+        type            cyclicAMI;
+        value           $internalField;
+    }
+}

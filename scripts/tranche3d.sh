@@ -11,7 +11,7 @@ set -euo pipefail
 NPALE=$1; NZONE=$2; DEST=$(realpath -m "$3"); NCOUCHES=${4:-0}
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 W=$(mktemp -d -p "${TMPDIR:-/tmp}")/maillage3d
-set +eu; source "${FOAM_BASHRC:-$HOME/OpenFOAM/OpenFOAM-8/etc/bashrc}"; set -eu
+set --; set +eu; source "${FOAM_BASHRC:-$HOME/OpenFOAM/OpenFOAM-8/etc/bashrc}"; set -eu   # sans arguments : le bashrc les interprète
 
 cp -r "$ROOT/base3d" "$W"; cd "$W"
 sed -i -e 's/ENDTIME/1/' -e 's/DELTAT/0.001/' -e 's/WRITESTEPS/100/' system/controlDict
