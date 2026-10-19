@@ -25,19 +25,21 @@ def lire_moments(case):
     """Renvoie [(t, Mz)] trié, les reprises écrasant les pas déjà calculés."""
     data = {}
     dossiers = sorted((case / "postProcessing/forces").iterdir(), key=lambda d: float(d.name))
-    # forces.dat, plus forces_<t>.dat quand une reprise repart d'un temps déjà utilisé
-    fichiers = [f for d in dossiers for f in sorted(d.glob("forces*.dat"), key=lambda f: f.stat().st_mtime)]
-    for f in fichiers:
-        for ligne in f.read_text().splitlines():
-            if ligne.startswith("#") or not ligne.strip():
-                continue
-            nums = re.findall(NUM, ligne)
-            if len(nums) < 19:
-                continue
-            t = float(nums[0])
-            # nums : t, 9 forces (pression, visqueux, poreux), 9 moments
-            mz = float(nums[12]) + float(nums[15])
-            data[t] = mz
+    # forces.dat, plus forces_<t>.dat quand une reprise repart d'un temps déjà utilisé ;
+    # OpenFOAM 12 écrit les moments à part, dans moments.dat
+    for motif in ("forces*.dat", "moments*.dat"):
+        fichiers = [f for d in dossiers for f in sorted(d.glob(motif), key=lambda f: f.stat().st_mtime)]
+        for f in fichiers:
+            for ligne in f.read_text().splitlines():
+                if ligne.startswith("#") or not ligne.strip():
+                    continue
+                nums = re.findall(NUM, ligne)
+                if motif.startswith("moments") and len(nums) >= 10:
+                    # OpenFOAM 12 : t, moment total, pression, visqueux
+                    data[float(nums[0])] = float(nums[3])
+                elif len(nums) >= 19:
+                    # OpenFOAM 8 : t, 9 forces (pression, visqueux, poreux), 9 moments
+                    data[float(nums[0])] = float(nums[12]) + float(nums[15])
     return sorted(data.items())
 
 

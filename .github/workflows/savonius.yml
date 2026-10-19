@@ -79,8 +79,11 @@ jobs:
           tar xzf reprise/*.tar.gz -C runs
           ls runs
 
-      - name: Calcul OpenFOAM 8 (conteneur)
+      - name: Calcul OpenFOAM (conteneur)
         run: |
+          # image propre au cas modèle (ex. OpenFOAM 12), sinon OpenFOAM 8
+          [ -f "${{ inputs.base }}/IMAGE_DOCKER" ] && IMAGE=$(cat "${{ inputs.base }}/IMAGE_DOCKER")
+          echo "image : $IMAGE" >> "$GITHUB_STEP_SUMMARY"
           docker pull -q "$IMAGE"
           CASE=runs/tsr${{ matrix.tsr }}_U${{ inputs.U }}
           NP=${{ inputs.np }}; [ "$NP" = 0 ] && NP=$(nproc)

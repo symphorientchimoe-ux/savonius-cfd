@@ -1,0 +1,7 @@
+Cas base_v3bl_dom2 porté vers OpenFOAM 12 (fondation), version installée sur les grappes de l'Alliance (FIR).
+Même maillage, mêmes schémas et mêmes solveurs linéaires que base_v3bl_dom2 (OpenFOAM 8).
+Changements de syntaxe :
+  - controlDict : application foamRun + solver incompressibleFluid (au lieu de pimpleFoam) ;
+  - dynamicMeshDict : réglages du maillage tournant dans un sous-dictionnaire mover ;
+  - transportProperties remplacé par physicalProperties (viscosityModel constant).
+IMAGE_DOCKER : image utilisée par le workflow GitHub pour ce cas.

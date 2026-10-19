@@ -1,6 +1,6 @@
 #!/bin/bash
 # Lance (ou reprend) un calcul Savonius pour un lambda donné, sur n'importe quelle machine
-# où OpenFOAM 8 est installé (poste local, conteneur Docker, Kaggle, Colab, Oracle...).
+# où OpenFOAM 8 ou 12 est installé (poste local, conteneur Docker, Kaggle, Colab, Oracle...).
 #
 # Le calcul s'arrête proprement (écriture des champs) au bout de BUDGET secondes,
 # pour tenir dans les limites des plateformes gratuites (6 h GitHub, 12 h Kaggle/Colab).
@@ -24,8 +24,9 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="${SAVONIUS_ROOT:-$(cd "$HERE/../.." && pwd)}"
 
 if [ -z "${FOAM_BASHRC:-}" ]; then
-    if [ -f /opt/openfoam8/etc/bashrc ]; then FOAM_BASHRC=/opt/openfoam8/etc/bashrc
-    else FOAM_BASHRC="$HOME/OpenFOAM/OpenFOAM-8/etc/bashrc"; fi
+    # conteneur Docker : /opt/openfoam8 ou /opt/openfoam12 selon l'image (voir IMAGE_DOCKER du cas modèle)
+    FOAM_BASHRC=$(ls -1 /opt/openfoam*/etc/bashrc 2>/dev/null | head -1)
+    [ -n "$FOAM_BASHRC" ] || FOAM_BASHRC="$HOME/OpenFOAM/OpenFOAM-8/etc/bashrc"
 fi
 export FOAM_BASHRC
 
@@ -89,18 +90,21 @@ foamDictionary system/controlDict -entry functions/stopAtClock -remove > /dev/nu
 foamDictionary system/controlDict -entry functions/stopAtClock -add \
     "{ type stopAtClockTime; libs (\"libutilityFunctionObjects.so\"); stopTime $BUDGET; action writeNow; }" > /dev/null
 
+# pimpleFoam (OpenFOAM 8) ou foamRun (OpenFOAM 11 et plus), d'après le controlDict ;
+# le journal garde le nom log.pimpleFoam.N dans les deux cas (lu par le workflow et les scripts de suivi)
+APP=$(foamDictionary system/controlDict -entry application -value)
 n=1; while [ -e "log.pimpleFoam.$n" ]; do n=$((n+1)); done
 LOG="log.pimpleFoam.$n"
-echo ">> pimpleFoam sur $NP processus, budget ${BUDGET} s, journal $LOG"
+echo ">> $APP sur $NP processus, budget ${BUDGET} s, journal $LOG"
 t0=$(date +%s)
 if [ "$NP" -gt 1 ]; then
     # --oversubscribe : les runners cloud annoncent des vCPU (hyperthreads) que MPI ne compte pas comme cœurs
-    mpirun --oversubscribe -np "$NP" pimpleFoam -parallel > "$LOG" 2>&1
+    mpirun --oversubscribe -np "$NP" "$APP" -parallel > "$LOG" 2>&1
 else
-    pimpleFoam > "$LOG" 2>&1
+    "$APP" > "$LOG" 2>&1
 fi
 rc=$?
-echo ">> pimpleFoam terminé (code $rc) en $(( $(date +%s) - t0 )) s"
+echo ">> $APP terminé (code $rc) en $(( $(date +%s) - t0 )) s"
 tail -5 "$LOG"
 
 # dernier temps écrit et état
