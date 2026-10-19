@@ -83,7 +83,9 @@ jobs:
         run: |
           # image propre au cas modèle (ex. OpenFOAM 12), sinon OpenFOAM 8
           [ -f "${{ inputs.base }}/IMAGE_DOCKER" ] && IMAGE=$(cat "${{ inputs.base }}/IMAGE_DOCKER")
-          echo "image : $IMAGE" >> "$GITHUB_STEP_SUMMARY"
+          # paquet OpenFOAM à installer depuis dl.openfoam.org quand il n'existe pas d'image officielle (OpenFOAM 12)
+          PAQUET=$(cat "${{ inputs.base }}/PAQUET_APT" 2>/dev/null || true)
+          echo "image : $IMAGE ${PAQUET}" >> "$GITHUB_STEP_SUMMARY"
           docker pull -q "$IMAGE"
           CASE=runs/tsr${{ matrix.tsr }}_U${{ inputs.U }}
           NP=${{ inputs.np }}; [ "$NP" = 0 ] && NP=$(nproc)
@@ -92,6 +94,13 @@ jobs:
           docker run --rm --user root --entrypoint /bin/bash \
             -v "$PWD":/w -w /w "$IMAGE" -c "
               command -v python3 > /dev/null || (apt-get update -qq && apt-get install -y -qq python3 > /dev/null)
+              if [ -n '$PAQUET' ]; then
+                export DEBIAN_FRONTEND=noninteractive
+                apt-get update -qq && apt-get install -y -qq wget ca-certificates software-properties-common > /dev/null
+                wget -qO /etc/apt/trusted.gpg.d/openfoam.asc https://dl.openfoam.org/gpg.key
+                add-apt-repository -y http://dl.openfoam.org/ubuntu > /dev/null
+                apt-get update -qq && apt-get install -y -qq $PAQUET > /dev/null || exit 1
+              fi
               bash calcul_distant/commun/lancer_cas.sh $CASE --tsr $TSR $STAT --U ${{ inputs.U }} \
                 --np $NP --budget ${{ inputs.budget }} --revs ${{ inputs.revs }} --deg ${{ inputs.deg }} --base ${{ inputs.base }} \
                 --archive /w/cas.tar.gz

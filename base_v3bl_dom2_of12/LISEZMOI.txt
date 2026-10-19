@@ -4,4 +4,4 @@ Changements de syntaxe :
   - controlDict : application foamRun + solver incompressibleFluid (au lieu de pimpleFoam) ;
   - dynamicMeshDict : réglages du maillage tournant dans un sous-dictionnaire mover ;
   - transportProperties remplacé par physicalProperties (viscosityModel constant).
-IMAGE_DOCKER : image utilisée par le workflow GitHub pour ce cas.
+IMAGE_DOCKER et PAQUET_APT : pas d image Docker officielle pour la version 12, le workflow installe le paquet openfoam12 (dl.openfoam.org) dans Ubuntu 24.04.
