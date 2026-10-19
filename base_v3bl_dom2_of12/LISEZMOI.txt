@@ -3,6 +3,7 @@ Même maillage, mêmes schémas et mêmes solveurs linéaires que base_v3bl_dom2
 Changements de syntaxe :
   - controlDict : application foamRun + solver incompressibleFluid (au lieu de pimpleFoam) ;
   - dynamicMeshDict : réglages du maillage tournant dans un sous-dictionnaire mover ;
+  - fieldMinMax supprimé (n existe plus en version 12) ;
   - transportProperties remplacé par physicalProperties (viscosityModel constant) ;
   - cyclicAMI n existe plus : AMI1 et AMI2 restent des patchs, couplés par createNonConformalCouples (nonConformalCyclic) ;
     conditions sur leurs parties non couvertes : movingWallSlipVelocity pour U, zeroGradient ailleurs.

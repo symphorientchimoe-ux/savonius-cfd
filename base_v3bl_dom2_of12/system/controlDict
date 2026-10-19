@@ -37,15 +37,6 @@ adjustTimeStep  no;
 
 functions
 {
-    minMax
-    {
-        type            fieldMinMax;
-        libs            ("libfieldFunctionObjects.so");
-        fields          (U p);
-        location        yes;
-        writeControl    timeStep;
-        log             false;
-    }
     forces
     {
         type            forces;

@@ -108,6 +108,7 @@ jobs:
               cp $CASE/ETAT /w/ETAT
               cp $CASE/caseInfo.txt /w/caseInfo.txt
               tail -40 $CASE/log.pimpleFoam.* > /w/fin_journal.txt
+              grep -h -m1 -A4 'FOAM FATAL' $CASE/log.pimpleFoam.* >> /w/fin_journal.txt || true
               chmod -R a+rwX /w
             "
           echo "tsr=${{ matrix.tsr }} etat=$(cat ETAT)" >> "$GITHUB_STEP_SUMMARY"
