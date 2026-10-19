@@ -23,6 +23,8 @@ internalField   uniform (0 0 0);
 
 boundaryField
 {
+    #includeEtc "caseDicts/setConstraintTypes"
+
     inlet
     {
         // rampe lineaire de 0 a Uinf sur TRAMP s (demarrage progressif)
@@ -49,14 +51,9 @@ boundaryField
     {
         type            symmetry;
     }
-    AMI1
+    "AMI(1|2)"
     {
-        type            cyclicAMI;
-        value           $internalField;
-    }
-    AMI2
-    {
-        type            cyclicAMI;
-        value           $internalField;
+        type            movingWallSlipVelocity;
+        value           uniform (0 0 0);
     }
 }

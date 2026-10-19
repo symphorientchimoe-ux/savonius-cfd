@@ -22,17 +22,15 @@ def of(cmd, case):
 
 
 def types_patchs(bnd):
-    """Types des patchs écrits par gmshToFoam, modifiés directement dans le fichier boundary."""
+    """Types des patchs écrits par gmshToFoam, modifiés directement dans le fichier boundary (OpenFOAM 10 et plus).
+    AMI1 et AMI2 restent de type patch : createNonConformalCouples les couple ensuite (cyclicAMI n'existe plus)."""
     s = bnd.read_text()
-    voulu = {"frontAndBack": "empty", "sides": "symmetry", "blades": "wall",
-             "AMI1": "cyclicAMI", "AMI2": "cyclicAMI"}
+    voulu = {"frontAndBack": "empty", "sides": "symmetry", "blades": "wall"}
     for nom, typ in voulu.items():
         m = re.search(rf"(\b{nom}\s*\{{)([^}}]*)\}}", s)
         assert m, f"patch {nom} absent de {bnd}"
         corps = re.sub(r"\btype\s+\w+;", f"type            {typ};", m.group(2))
         corps = re.sub(r"\s*inGroups[^;]*;", "", corps)          # groupe « patch » de gmshToFoam
-        if typ == "cyclicAMI":
-            corps += f"    neighbourPatch  {'AMI2' if nom == 'AMI1' else 'AMI1'};\n    "
         s = s[:m.start()] + m.group(1) + corps + "}" + s[m.end():]
     bnd.write_text(s)
 
@@ -120,7 +118,7 @@ def main():
     bnd = "constant/polyMesh/boundary"
     if cmds is None and (case / "constant/physicalProperties").exists():
         types_patchs(case / bnd)    # OpenFOAM 10 et plus : pas de syntaxe entry0 dans foamDictionary
-        cmds = []
+        cmds = ["createNonConformalCouples -overwrite AMI1 AMI2"]
     for cmd in cmds if cmds is not None else [
         f"foamDictionary {bnd} -entry entry0/frontAndBack/type -set empty",
         f"foamDictionary {bnd} -entry entry0/sides/type -set symmetry",

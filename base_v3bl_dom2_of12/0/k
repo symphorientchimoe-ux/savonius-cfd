@@ -21,6 +21,8 @@ internalField   uniform KINF;
 
 boundaryField
 {
+    #includeEtc "caseDicts/setConstraintTypes"
+
     inlet
     {
         type            fixedValue;
@@ -45,14 +47,8 @@ boundaryField
     {
         type            symmetry;
     }
-    AMI1
+    "AMI(1|2)"
     {
-        type            cyclicAMI;
-        value           $internalField;
-    }
-    AMI2
-    {
-        type            cyclicAMI;
-        value           $internalField;
+        type            zeroGradient;
     }
 }
