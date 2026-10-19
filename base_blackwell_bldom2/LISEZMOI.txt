@@ -1,0 +1,5 @@
+Validation Blackwell 1977 avec la méthode de référence (base_v3bl_dom2) : couches limites sur les godets, domaine élargi.
+  gmsh -3 -setnumber useBL 1 -setnumber bl1 6e-5 -setnumber xmin -9.6 -setnumber xmax 23.1 -setnumber ymax 9.6 \
+       -format msh2 blackwell2D.geo
+10D amont, 25D aval, 20D de large (blocage 4,8 %, D = 0,925 m). Première couche 0,06 mm au lieu de 0,1 mm
+car U = 7 m/s : même y+ visé (≈ 1) que le rotor CNDT à 4 m/s.

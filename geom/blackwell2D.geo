@@ -9,7 +9,7 @@ sr = 0.15;     // recouvrement s/c
 rs = 0.0;      // pas d'arbre (gardé pour les tests de courbes)
 Rr = 0.62;     // rayon de la zone tournante (AMI) [m]
 dz = 0.1;      // épaisseur d'extrusion 2D [m]
-xmin = -7; xmax = 20; ymax = 7;
+DefineConstant[ xmin = -7, xmax = 20, ymax = 7 ];
 
 DefineConstant[ hb = 0.0025, htip = 0.0025, hami = 0.015, hfar = 0.30, hwake = 0.07,
                 bl1 = 1.5e-4, blT = 0.003, blR = 1.2, useBL = 0, ext = 1, tm = 0.004 ];
