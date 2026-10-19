@@ -59,6 +59,7 @@ solvers
 PIMPLE
 {
     correctPhi          yes;
+    correctMeshPhi      no;     // OpenFOAM 12, rotation de corps solide (comme le tutoriel mixerVessel2D)
     nOuterCorrectors    12;
     nCorrectors         3;
     nNonOrthogonalCorrectors 1;
