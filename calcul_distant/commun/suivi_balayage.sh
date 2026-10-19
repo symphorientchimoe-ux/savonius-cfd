@@ -27,7 +27,7 @@ for (etiq, U, tsr) in sorted(best, key=lambda k: (k[0] != "balayage", k[0], floa
     etat = (d / "ETAT").read_text().strip() if (d / "ETAT").exists() else "?"
     b = (d / "bilan.txt").read_text() if (d / "bilan.txt").exists() else ""
     tete = f"{etiq:9s} U={U:<4} {'angle' if etiq == 'statique' else 'lambda'} {tsr:>4}  passe {p:2d}  {etat:12s}"
-    if etiq == "statique":
+    if "stat" in etiq:
         av = re.search(r"\(([\d.]+) s après la rampe\)", b); cm = re.search(r"Cm statique moyen.*= ([-\d.]+)", b)
         print(f"{tete} {av[1] if av else '-':>5} s   Cm statique {cm[1] if cm else '-'}")
     else:
