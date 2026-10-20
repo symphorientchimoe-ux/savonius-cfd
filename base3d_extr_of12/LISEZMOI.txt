@@ -1,0 +1,7 @@
+Cas base3d_extr porté vers OpenFOAM 12, pour la grappe FIR. Mêmes changements que base_v3bl_dom2 -> base_v3bl_dom2_of12 :
+foamRun + incompressibleFluid, sous-dictionnaire mover, physicalProperties, fieldMinMax supprimé, correctMeshPhi no,
+AMI1/AMI2 couplés par createNonConformalCouples (movingWallSlipVelocity pour U, zeroGradient ailleurs sur leurs parties non couvertes).
+Le maillage (constant/polyMesh) n'est pas dans le dépôt : il se fabrique avec OpenFOAM 8 (voir base3d_extr/LISEZMOI.txt)
+et se copie ici ; mkcase.py remet alors AMI1 et AMI2 en patchs avant le couplage. Mode d'emploi sur FIR : calcul_distant/08_fir/LISEZMOI.txt.
+Pas encore testé (pas d'OpenFOAM 12 sur la station) : le premier passage sur FIR sert aussi de test.
+Couple : bilan_couple.py --dz 0.5.

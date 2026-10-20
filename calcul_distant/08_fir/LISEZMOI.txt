@@ -1,0 +1,22 @@
+Calcul 3D sur la grappe FIR (Alliance de recherche numérique du Canada, compte tchimoe, CCRI dhx-744-01).
+
+Connexion : « ssh fir » (entrée fir dans ~/.ssh/config de la station, clé ~/.ssh/id_ed25519_alliance, validation Duo).
+La connexion reste ouverte 8 h : les commandes suivantes ne redemandent pas Duo.
+
+1. Une seule fois, sur FIR :
+     git clone https://github.com/symphorientchimoe-ux/savonius-cfd.git
+     module spider openfoam        (vérifier que openfoam/12 existe ; sinon corriger la ligne module de test_3d_fir.slurm)
+     sshare -U                     (nom du compte Slurm, à mettre dans --account)
+
+2. Le maillage 3D (188 Mo) n'est pas dans le dépôt. Il se fabrique sur la station avec OpenFOAM 8 :
+     gmsh -3 -format msh2 geom/savonius3D_plan.geo -o plan.msh
+     bash scripts/maillage3d_extrusion.sh plan.msh base3d_extr 20 8 10
+   puis s'envoie dans le cas OpenFOAM 12 sur FIR :
+     rsync -a base3d_extr/constant/polyMesh/ fir:savonius-cfd/base3d_extr_of12/constant/polyMesh/
+   mkcase.py remet AMI1 et AMI2 en patchs et les couple par createNonConformalCouples (OpenFOAM 12).
+
+3. Test de coût (60 pas à lambda = 0,8), sur FIR depuis savonius-cfd :
+     sbatch --ntasks=32 calcul_distant/08_fir/test_3d_fir.slurm
+     sbatch --ntasks=64 calcul_distant/08_fir/test_3d_fir.slurm
+   Le fichier sav3d_test-<job>.out donne le temps par pas et le coût de 25 tours en cœur·heures.
+   Le cas tourne dans $SCRATCH/savonius/ (le scratch est purgé : ne pas y laisser de résultats à garder).
