@@ -67,7 +67,8 @@ else
 import pathlib, re, subprocess, sys
 case, revs = pathlib.Path(sys.argv[1]), float(sys.argv[2])
 info = dict(l.split(" ", 1) for l in (case / "caseInfo.txt").read_text().splitlines() if " " in l)
-if float(info["revs"]) != revs:
+# en statique, la durée est fixée par mkcase (period) : --revs ne s'applique pas
+if "static" not in info and float(info["revs"]) != revs:
     end = float(info["tramp"]) + revs * float(info["period"])
     subprocess.run(["foamDictionary", str(case / "system/controlDict"), "-entry", "endTime", "-set", f"{end:.6g}"],
                    check=True, stdout=subprocess.DEVNULL)
