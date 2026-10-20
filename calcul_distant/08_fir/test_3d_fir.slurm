@@ -1,10 +1,10 @@
 #!/bin/bash
 # Mesure du coût du cas 3D (base3d_extr_of12, ~2 M cellules) sur la grappe FIR de l'Alliance.
 # Fait NPAS pas de temps à lambda = 0,8 et écrit le temps par pas et l'estimation en cœur·heures pour 25 tours.
-# Avant le premier lancement : remplir --account (demander le nom du compte du groupe : sshare -U, ou Ulrich),
-# vérifier le module (module spider openfoam) et copier le maillage (voir LISEZMOI.txt).
+# Compte def-mparasch (allocation par défaut du groupe du Pr Paraschivoiu ; rrg-mparasch-ad = allocation prioritaire,
+# à garder pour les vrais calculs). Nœuds FIR : 192 cœurs, 768 Go. Copier d'abord le maillage (voir LISEZMOI.txt).
 # Usage, depuis la racine du dépôt sur FIR :  sbatch --ntasks=64 calcul_distant/08_fir/test_3d_fir.slurm
-#SBATCH --account=COMPTE_A_REMPLIR
+#SBATCH --account=def-mparasch
 #SBATCH --job-name=sav3d_test
 #SBATCH --time=01:00:00
 #SBATCH --nodes=1
@@ -14,7 +14,7 @@
 
 set -eo pipefail          # pas de -u : les scripts de module et le bashrc OpenFOAM utilisent des variables non définies
 NPAS=${NPAS:-60}
-module load StdEnv/2023 openfoam/12
+module load StdEnv/2023 gcc/12.3 openmpi/4.1.5 openfoam/12
 export FOAM_BASHRC=$WM_PROJECT_DIR/etc/bashrc     # lu par scripts/mkcase.py
 
 RACINE=$(pwd)

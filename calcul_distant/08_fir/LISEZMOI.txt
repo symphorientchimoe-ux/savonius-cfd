@@ -5,8 +5,9 @@ La connexion reste ouverte 8 h : les commandes suivantes ne redemandent pas Duo.
 
 1. Une seule fois, sur FIR :
      git clone https://github.com/symphorientchimoe-ux/savonius-cfd.git
-     module spider openfoam        (vérifier que openfoam/12 existe ; sinon corriger la ligne module de test_3d_fir.slurm)
-     sshare -U                     (nom du compte Slurm, à mettre dans --account)
+   Vérifié le 20/10/2026 : module openfoam/12 (avec StdEnv/2023 gcc/12.3 openmpi/4.1.5) ;
+   comptes Slurm def-mparasch et rrg-mparasch-ad (sshare -U) ; nœuds de 192 cœurs et 768 Go.
+   Accès : il faut demander chaque grappe dans CCDB (Ressources > Accès aux systèmes), FIR et Nibi accordés le 20/10.
 
 2. Le maillage 3D (188 Mo) n'est pas dans le dépôt. Il se fabrique sur la station avec OpenFOAM 8 :
      gmsh -3 -format msh2 geom/savonius3D_plan.geo -o plan.msh
