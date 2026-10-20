@@ -111,11 +111,12 @@ tail -5 "$LOG"
 # dernier temps écrit et état
 if [ "$NP" -gt 1 ]; then TDIR=processor0; else TDIR=.; fi
 LAST=$(ls -1 "$TDIR" | grep -E '^[0-9.eE+-]+$' | sort -g | tail -1)
-END=$(foamDictionary system/controlDict -entry endTime -value)
+# OpenFOAM 12 colle l'unité aux temps (« Time = 34.38s ») : on ne garde que le nombre
+END=$(foamDictionary system/controlDict -entry endTime -value | sed 's/[^0-9.eE+-]*$//')
 if [ "$rc" -ne 0 ]; then
     echo erreur > ETAT        # divergence ou plantage : ne pas relancer à l'aveugle
 # fin atteinte : dernier temps écrit, ou dernier pas calculé (endTime n'est pas toujours un temps d'écriture)
-elif LASTRUN=$(grep -E '^Time = ' "$LOG" | tail -1 | awk '{print $3}'); \
+elif LASTRUN=$(grep -E '^Time = ' "$LOG" | tail -1 | awk '{print $3}' | sed 's/[^0-9.eE+-]*$//'); \
      python3 -c "import sys; sys.exit(0 if max(float('$LAST'), float('${LASTRUN:-0}')) >= 0.9999*float('$END') else 1)"; then
     echo termine > ETAT
 else

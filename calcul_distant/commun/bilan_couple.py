@@ -40,6 +40,9 @@ def lire_moments(case):
                 elif len(nums) >= 19:
                     # OpenFOAM 8 : t, 9 forces (pression, visqueux, poreux), 9 moments
                     data[float(nums[0])] = float(nums[12]) + float(nums[15])
+                elif len(nums) == 13:
+                    # OpenFOAM 12 (paquet openfoam12) : t, 6 forces (pression, visqueux), 6 moments
+                    data[float(nums[0])] = float(nums[9]) + float(nums[12])
     return sorted(data.items())
 
 
