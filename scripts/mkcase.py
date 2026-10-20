@@ -48,6 +48,19 @@ def ami_en_patch(bnd):
     bnd.write_text(s)
 
 
+def ami_en_cyclic(bnd):
+    """Maillage fourni (ex. maillage3d_extrusion.sh) avec AMI1/AMI2 en simples patchs : OpenFOAM 8 attend des cyclicAMI."""
+    s = bnd.read_text()
+    for nom, voisin in (("AMI1", "AMI2"), ("AMI2", "AMI1")):
+        m = re.search(rf"(\b{nom}\s*\{{)([^}}]*)\}}", s)
+        assert m, f"patch {nom} absent de {bnd}"
+        if "cyclicAMI" in m.group(2):
+            continue
+        corps = re.sub(r"\btype\s+\w+;", f"type            cyclicAMI;\n        neighbourPatch  {voisin};", m.group(2))
+        s = s[:m.start()] + m.group(1) + corps + "}" + s[m.end():]
+    bnd.write_text(s)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("case")
@@ -128,6 +141,8 @@ def main():
         if (case / "constant/physicalProperties").exists():
             ami_en_patch(case / "constant/polyMesh/boundary")
             cmds = ["createNonConformalCouples -overwrite AMI1 AMI2"]
+        else:
+            ami_en_cyclic(case / "constant/polyMesh/boundary")
     else:
         of(f"gmshToFoam {a.msh}", case)
         cmds = None

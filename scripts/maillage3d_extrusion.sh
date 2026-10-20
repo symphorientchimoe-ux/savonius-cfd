@@ -4,13 +4,15 @@
 #   étage 2 : z de H2 à HZ (haut de la zone tournante), plan plein               -> dessus des pales = paroi
 #   étage 3 : z de HZ à ZTOP, anneau fixe + couvercle fixe                        -> interface glissante au-dessus du rotor
 # z = 0 est le plan de symétrie à mi-hauteur du rotor (patch sym), ZTOP le haut du domaine (patch top).
-# Usage : bash scripts/maillage3d_extrusion.sh PLAN.msh DOSSIER_SORTIE [NZ1 NZ2 NZ3]
+# Usage : bash scripts/maillage3d_extrusion.sh PLAN.msh DOSSIER_SORTIE [NZ1 NZ2 NZ3 [R1 R2 R3]]
+#   R1 R2 R3 : rapport entre couches voisines de chaque étage, en partant du haut (défaut 1.07 0.83 0.77).
+#   Maillage resserré au sommet des pales (~1 mm de part et d'autre, 2,9 M cellules) : 30 15 10 1.15 0.75 0.77
 # Le dossier de sortie reçoit constant/polyMesh (patches inlet outlet sides sym top blades AMI1 AMI2, zone rotor).
 set -euo pipefail
 MSH=$(realpath "$1"); OUT=$(realpath -m "$2")
 NZ1=${3:-20}; NZ2=${4:-8}; NZ3=${5:-10}
 H2=0.5; HZ=0.8; ZTOP=3.0
-R1=1.07; R2=0.83; R3=0.77        # rapport entre couches voisines, en partant du haut de chaque étage (extrusion vers le bas)
+R1=${6:-1.07}; R2=${7:-0.83}; R3=${8:-0.77}   # rapport entre couches voisines, en partant du haut de chaque étage (extrusion vers le bas)
 set --; set +eu; source "${FOAM_BASHRC:-$HOME/OpenFOAM/OpenFOAM-8/etc/bashrc}"; set -eu   # sans arguments : le bashrc les interprète
 W=$(mktemp -d -p "${TMPDIR:-/tmp}")
 log() { echo ">> $*"; }

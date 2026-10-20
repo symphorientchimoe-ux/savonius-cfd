@@ -43,6 +43,9 @@ on:
       mode:
         description: 'rotation (lambdas = vitesses spécifiques) ou statique (lambdas = angles du rotor bloqué, en degrés)'
         default: 'rotation'
+      dt:
+        description: 'Pas de temps en statique [s] (vide = celui de lambda 0,8 à 4 m/s)'
+        default: ''
 
 permissions:
   contents: read
@@ -90,6 +93,7 @@ jobs:
           CASE=runs/tsr${{ matrix.tsr }}_U${{ inputs.U }}
           NP=${{ inputs.np }}; [ "$NP" = 0 ] && NP=$(nproc)
           if [ "${{ inputs.mode }}" = statique ]; then TSR=0; STAT="--static ${{ matrix.tsr }}"
+            [ -n "${{ inputs.dt }}" ] && STAT="$STAT --dt ${{ inputs.dt }}"
           else TSR=${{ matrix.tsr }}; STAT=""; fi
           docker run --rm --user root --entrypoint /bin/bash \
             -v "$PWD":/w -w /w "$IMAGE" -c "
@@ -167,4 +171,4 @@ jobs:
             -f lambdas="$liste" -f U="${{ inputs.U }}" -f revs="${{ inputs.revs }}" \
             -f deg="${{ inputs.deg }}" -f np="${{ inputs.np }}" -f base="${{ inputs.base }}" -f budget="${{ inputs.budget }}" \
             -f reprise_run_id="${{ github.run_id }}" -f passe="$passe" \
-            -f passes_max="${{ inputs.passes_max }}" -f etiquette="${{ inputs.etiquette }}" -f mode="${{ inputs.mode }}"
+            -f passes_max="${{ inputs.passes_max }}" -f etiquette="${{ inputs.etiquette }}" -f mode="${{ inputs.mode }}" -f dt="${{ inputs.dt }}"

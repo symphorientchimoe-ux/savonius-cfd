@@ -1,0 +1,5 @@
+Variante de base_v3bl_dom2 pour séparer les effets du domaine : entrée à 10D et aval à 25D comme dom2,
+mais largeur 10D (blocage 9,7 %) comme le petit domaine de base_v3bl. Maillage :
+  gmsh -3 -setnumber tm 0.004 -setnumber hb 0.0025 -setnumber htip 0.0025 -setnumber useBL 1 \
+       -setnumber bl1 1e-4 -setnumber blT 0.003 -setnumber blArbre 1 \
+       -setnumber xmin -14 -setnumber xmax 34 -setnumber ymax 7 -format msh2 savonius2D.geo
