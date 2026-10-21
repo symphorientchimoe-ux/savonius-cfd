@@ -16,6 +16,7 @@ set -eo pipefail          # pas de -u : les scripts de module et le bashrc OpenF
 NPAS=${NPAS:-40}
 module load StdEnv/2023 gcc/12.3 openmpi/4.1.5 openfoam/12
 export FOAM_BASHRC=/dev/null     # le module définit déjà tout l environnement ; mkcase.py « source » ce fichier
+export FOAM_FILEHANDLER=collated # conseil d Ulrich : un seul dossier processors64 au lieu de 64 dossiers (Lustre)
 
 RACINE=$(pwd)
 CASE=$SCRATCH/savonius/test3d_np${SLURM_NTASKS}_${SLURM_JOB_ID}
