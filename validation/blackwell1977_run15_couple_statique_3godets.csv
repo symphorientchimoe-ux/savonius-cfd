@@ -1,0 +1,26 @@
+# Blackwell, Sheldahl & Feltz (1977), SAND76-0131, fig. 22 p. 57 : run 15, configuration 8
+# 3 godets à arc de 150° (raccourcis de 20° au bord extérieur, 10° au bord intérieur), r = 0,25 m, s/d = 0,10,
+# H = 1,0 m, R = 0,4690 m, Re/m = 4,32e5 (U = 7 m/s), couple statique, rotor bloqué, plaques d'extrémité.
+# C_Q = Q / (q R A_s), A_s = 2 R H (même définition que notre Cm). Repère d'angle : fig. 6 du rapport.
+# Relevé le 21/10/2026 sur la page rendue à 100 dpi, contrôlé par superposition (axe : 645,7 px par unité, 3,2 px/°) ;
+# incertitude de lecture ~ ±0,01 sur C_Q, ±1° sur θ. À −5°, point répété : 0,328 et 0,348 (moyenne gardée).
+theta_deg,CQ
+-5,0.338
+5,0.277
+15,0.350
+25,0.454
+35,0.406
+45,0.393
+55,0.341
+65,0.262
+75,0.254
+85,0.283
+95,0.180
+105,0.259
+115,0.325
+125,0.341
+135,0.373
+145,0.396
+155,0.418
+165,0.358
+175,0.288
