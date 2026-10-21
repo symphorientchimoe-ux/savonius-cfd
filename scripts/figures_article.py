@@ -32,6 +32,7 @@ def num(x, n=3):
 REF = premiere("bldom2_U4", "bl_U4")                    # couches limites (+ grand domaine dès qu'il est fini)
 BW = premiere("bwbldom2_U7", "blackwell_U7")            # validation avec la même méthode
 STAT = premiere("bldom2stat_U4", "blstatique_U4", "statique_U4", motif="ang")
+BWSTAT = premiere("bwbldom2stat_U7", "bwstat_U4", motif="ang")
 
 
 def info(nom):
@@ -120,22 +121,89 @@ def statique(prefixe):
 
 def fig_statique():
     ang, m, e = statique(STAT)
-    fig, ax = plt.subplots(figsize=(6.6, 4.2))
-    ax.errorbar(ang, m, yerr=e, fmt="o-", capsize=3, color="#2e8b3a", label="CNDT rotor, 4 blades")
-    ax.plot(ang + 90, m, "o--", mfc="white", color="#2e8b3a", label="CNDT rotor, repeated (90° period)")
-    if any(RES.glob("bwstat_U4_ang*.csv")):
-        b, mb, eb = statique("bwstat_U4")
-        ax.errorbar(b, mb, yerr=eb, fmt="s-", capsize=3, color="#7f3f98", label="Blackwell two-bucket rotor")
-        print("Couple statique Blackwell : " + ", ".join(f"{a:.0f}° {v:.3f}" for a, v in zip(b, mb)))
-        V["BwStatMin"] = num(mb.min(), 2); V["BwStatMinAng"] = f"{b[mb.argmin()]:.0f}"; V["BwStatMax"] = num(mb.max(), 2)
-    ax.axhline(0, color="k", lw=0.8)
-    ax.set_xlabel("Rotor angular position θ (°)"); ax.set_ylabel("Static torque coefficient $C_{ms}$")
-    ax.set_xticks(range(0, 181, 30)); ax.set_xlim(-5, 185)
-    ax.set_title("Static torque, rotor locked, U = 4 m/s (2D)", fontsize=10); ax.legend(fontsize=8)
-    fig.tight_layout(); fig.savefig(OUT / "fig_couple_statique.png", dpi=200); plt.close(fig)
-    V["StatMin"] = num(m.min(), 2); V["StatMinAng"] = f"{ang[m.argmin()]:.0f}"
+    fig, ax = plt.subplots(1, 2, figsize=(11, 4.2))
+    ax[0].errorbar(ang, m, yerr=e, fmt="o-", capsize=3, color="#2e8b3a", label="U = 4 m/s")
+    ax[0].plot(ang + 90, m, "o--", mfc="white", color="#2e8b3a", label="U = 4 m/s, repeated (90° period)")
+    if any(RES.glob("bldom2statU25_U2.5_ang*.csv")):
+        a2, m2, e2 = statique("bldom2statU25_U2.5")
+        ax[0].errorbar(a2, m2, yerr=e2, fmt="^", capsize=3, color="#e08a1e", label="U = 2.5 m/s")
+        V["StatLowMin"] = num(m2.min(), 2); V["StatLowMinAng"] = f"{a2[m2.argmin()]:.0f}"
+        V["StatLowZero"] = num(m2[a2 == 0][0], 2); V["StatLowNinety"] = num(m2[a2 == 90][0], 2)
+        print("Couple statique à 2,5 m/s : " + ", ".join(f"{a:.0f}° {v:.3f}±{s:.3f}" for a, v, s in zip(a2, m2, e2)))
+    ax[0].axhline(0, color="k", lw=0.8)
+    ax[0].set_xlabel("Rotor angular position θ (°)"); ax[0].set_ylabel("Static torque coefficient $C_{ms}$")
+    ax[0].set_xticks(range(0, 181, 30)); ax[0].set_xlim(-5, 185); ax[0].set_ylim(-0.1, 0.4)
+    ax[0].set_title("(a) CNDT rotor, locked (2D)", fontsize=10); ax[0].legend(fontsize=8)
+    V["StatMin"] = num(m.min(), 3); V["StatMinErr"] = num(e[m.argmin()], 3); V["StatMinAng"] = f"{ang[m.argmin()]:.0f}"
     V["StatMax"] = num(m.max(), 2); V["StatMaxAng"] = f"{ang[m.argmax()]:.0f}"; V["StatMean"] = num(m[:-1].mean(), 2)
+    V["StatSeventyFive"] = num(m[ang == 75][0], 3); V["StatSeventy"] = num(m[ang == 70][0], 3)
+    V["StatErrMax"] = num(e.max(), 2)
     print(f"Couple statique ({STAT}) : " + ", ".join(f"{a:.0f}° {v:.3f}±{s:.3f}" for a, v, s in zip(ang, m, e)))
+    # rotor de Blackwell : calcul à 7 m/s (même méthode) et mesure du run 19 (fig. 9 du rapport)
+    b, mb, eb = statique(BWSTAT)
+    ex = np.loadtxt(ROOT / "validation" / "blackwell1977_run19_couple_statique.csv", delimiter=",", comments="#", skiprows=8)
+    A, M = np.r_[b, 180], np.r_[mb, mb[0]]
+    def ecart(dec):                                    # θ_Blackwell = φ + dec (mod 180)
+        c = np.interp((ex[:, 0] - dec) % 180, A, M); return np.sqrt(((c - ex[:, 1]) ** 2).mean()), np.corrcoef(c, ex[:, 1])[0, 1]
+    dec = max(range(0, 180, 5), key=lambda d: ecart(d)[1])
+    phi = (ex[:, 0] - dec) % 180
+    ax[1].errorbar(b, mb, yerr=eb, fmt="s-", capsize=3, color="#7f3f98", label="Present 2D URANS, U = 7 m/s")
+    ax[1].plot(phi, ex[:, 1], "ko", mfc="white", label=f"Experiment, run 19 (angle shifted by {dec}°)")
+    ax[1].axhline(0, color="k", lw=0.8)
+    ax[1].set_xlabel("Rotor angular position (°)"); ax[1].set_ylabel("Static torque coefficient $C_{ms}$")
+    ax[1].set_xticks(range(0, 181, 30)); ax[1].set_xlim(-5, 185); ax[1].set_ylim(-0.1, 1.0)
+    ax[1].set_title("(b) Two-bucket rotor of Blackwell et al.", fontsize=10); ax[1].legend(fontsize=8, loc="upper right")
+    fig.tight_layout(); fig.savefig(OUT / "fig_couple_statique.png", dpi=200); plt.close(fig)
+    me = ex[:-1, 1].mean()                             # le dernier point (115°) répète le premier (−65°)
+    V["BwStatMin"] = num(mb.min(), 2); V["BwStatMinAng"] = f"{b[mb.argmin()]:.0f}"; V["BwStatMax"] = num(mb.max(), 2)
+    V["BwStatMean"] = num(mb.mean(), 2); V["BwStatExpMean"] = num(me, 2); V["BwStatExpMin"] = num(ex[:, 1].min(), 2)
+    V["BwStatExpMax"] = num(ex[:, 1].max(), 2); V["BwStatOver"] = f"{100 * (mb.mean() / me - 1):.0f}"
+    V["BwStatShift"] = f"{dec}"; V["BwStatCorr"] = num(ecart(dec)[1], 2)
+    print(f"Couple statique Blackwell ({BWSTAT}) : " + ", ".join(f"{a:.0f}° {v:.3f}" for a, v in zip(b, mb)))
+    print(f"  mesure : moyenne {me:.3f}, min {ex[:, 1].min():.3f} ; calcul : moyenne {mb.mean():.3f} "
+          f"(+{100 * (mb.mean() / me - 1):.0f} %), min {mb.min():.3f} ; décalage d'angle {dec}°, corrélation {ecart(dec)[1]:.2f}")
+
+
+def fig_demarrage():
+    """Vent de démarrage U = sqrt(T / (C_ms ½ ρ D H R)) en fonction du couple résistant de la pompe."""
+    ang, m, _ = statique(STAT)
+    k = 0.5 * 1.225 * 1.354 * 1.0 * 0.68                  # ½ ρ D H R [kg/m]
+    T = np.linspace(0.05, 3, 200)
+    fig, ax = plt.subplots(figsize=(6.4, 4.2))
+    cas = [(m[:-1].mean(), "mean over positions", "-"), (np.sort(m)[1], f"2nd lowest position", "--"), (m.min(), "weakest position", ":")]
+    for cm, lab, st in cas:
+        ax.plot(T, np.sqrt(T / (cm * k)), st, color="#1f4e9c", label=f"{lab}, $C_{{ms}}$ = {cm:.3f}")
+    ax.set_xlabel("Resisting torque of the pump at start (N·m)"); ax.set_ylabel("Starting wind speed (m/s)")
+    ax.set_xlim(0, 3); ax.set_ylim(0, 15); ax.legend(fontsize=8, loc="upper left")
+    ax.set_title("CNDT rotor, H = 1 m, 2D static torque", fontsize=10)
+    fig.tight_layout(); fig.savefig(OUT / "fig_demarrage.png", dpi=200); plt.close(fig)
+    V["DemK"] = num(k, 3)
+    for t in (0.5, 1.0):
+        nom = "Half" if t == 0.5 else "One"
+        V[f"Dem{nom}Mean"] = f"{np.sqrt(t / (m[:-1].mean() * k)):.1f}"; V[f"Dem{nom}Min"] = f"{np.sqrt(t / (m.min() * k)):.1f}"
+        V[f"Dem{nom}Seventy"] = f"{np.sqrt(t / (m[ang == 70][0] * k)):.1f}"
+
+
+def fig_domaine():
+    """Effets séparés de la largeur et de la position d'entrée (λ = 0,8 et 1,2) et du vent (λ = 0,8)."""
+    print("Domaine et vent :")
+    for nom in ["bl_U4_tsr0.8", "bl_U4_tsr1.2", "bldomlarge_U4_tsr0.8", "bldomlarge_U4_tsr1.2",
+                "bldomamont_U4_tsr0.8", "bldomamont_U4_tsr1.2", f"{REF}_tsr0.8", f"{REF}_tsr1.2",
+                "of12_U4_tsr0.8", "bldom2U25_U2.5_tsr0.8", "bldom2U6_U6_tsr0.8"]:
+        if (RES / f"{nom}.csv").exists():
+            cp, e, nt, ok = moyenne(nom)
+            V["Dom" + nom.split("_")[0] + nom.split("tsr")[1]] = num(cp)
+            V["Dom" + nom.split("_")[0] + nom.split("tsr")[1] + "Fini"] = "1" if ok else "0"
+            print(f"  {nom} : Cp = {cp:.4f} ± {e:.4f} ({nt} tours{'' if ok else ', en cours'})")
+            if nom.startswith(("bl_", "bldomlarge", "bldomamont", REF)):   # même fenêtre (tours 6 à 15) : bl n'a que 15 tours
+                c, _ = tours(nom); lam = float(info(nom)["tsr"])
+                V["Win" + nom.split("_")[0] + nom.split("tsr")[1]] = num(lam * c[5:15].mean())
+    # vent : comparaison sur les mêmes tours (9 à 18), tant que les cas à 2,5 et 6 m/s ne sont pas finis
+    for nom in [f"{REF}_tsr0.8", "bldom2U25_U2.5_tsr0.8", "bldom2U6_U6_tsr0.8"]:
+        if (RES / f"{nom}.csv").exists():
+            c, _ = tours(nom)
+            if len(c) >= 18:
+                V["Re" + nom.split("_")[0]] = num(0.8 * c[8:18].mean())
 
 
 def fig_sensibilite():
@@ -188,7 +256,7 @@ def fig_azimut():
 
 
 if __name__ == "__main__":
-    fig_cp(); fig_blackwell(); fig_statique(); fig_sensibilite(); fig_azimut()
+    fig_cp(); fig_blackwell(); fig_statique(); fig_demarrage(); fig_domaine(); fig_sensibilite(); fig_azimut()
     V["RefSerie"] = REF.replace("_", r"\_"); V["StatSerie"] = STAT.replace("_", r"\_")
     lettres = dict(zip("0123456789.", ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "p"]))
     nom_macro = lambda k: "v" + "".join(lettres.get(c, c) if not c.isalpha() else c for c in k)
