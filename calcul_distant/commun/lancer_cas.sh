@@ -94,6 +94,9 @@ foamDictionary system/controlDict -entry functions/stopAtClock -add \
 # pimpleFoam (OpenFOAM 8) ou foamRun (OpenFOAM 11 et plus), d'après le controlDict ;
 # le journal garde le nom log.pimpleFoam.N dans les deux cas (lu par le workflow et les scripts de suivi)
 APP=$(foamDictionary system/controlDict -entry application -value)
+# kOmegaSSTLM (OpenFOAM 8) divise par la vorticité, nulle dans l'écoulement uniforme : le cas modèle qui
+# contient SANS_SIGFPE tourne sans piège à exceptions (le terme concerné tend alors vers 0, sans NaN)
+[ -f SANS_SIGFPE ] && { unset FOAM_SIGFPE; echo ">> piège FPE désactivé (SANS_SIGFPE)"; }
 n=1; while [ -e "log.pimpleFoam.$n" ]; do n=$((n+1)); done
 LOG="log.pimpleFoam.$n"
 echo ">> $APP sur $NP processus, budget ${BUDGET} s, journal $LOG"

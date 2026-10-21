@@ -1,0 +1,1 @@
+kOmegaSSTLM divise par la vorticité (Fthetat) : le calcul tourne sans piège FPE (voir lancer_cas.sh)

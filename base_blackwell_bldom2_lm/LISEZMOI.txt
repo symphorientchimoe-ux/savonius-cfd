@@ -1,0 +1,3 @@
+Variante de base_blackwell_bldom2 avec le modèle de transition k-ω SST LM (gamma-ReThetat, Langtry et Menter).
+But (calcul E) : voir si la surestimation de +76 % du couple statique du rotor de Blackwell vient de la part laminaire
+de la couche limite (Kacprzak et al. 2013). Même maillage et mêmes réglages ; entrée ReThetat = 584 (Tu = 1 %), gammaInt = 1.
