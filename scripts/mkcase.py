@@ -77,6 +77,8 @@ def ami_en_cyclic(bnd):
         if "cyclicAMI" in m.group(2):
             continue
         corps = re.sub(r"\btype\s+\w+;", f"type            cyclicAMI;\n        neighbourPatch  {voisin};", m.group(2))
+        if nom.startswith("NC"):    # faces de NC2 au-dessus de la tôle sans vis-à-vis : sans correction, 1/A divise par zéro
+            corps = corps.rstrip() + "\n        lowWeightCorrection 0.2;\n    "
         s = s[:m.start()] + m.group(1) + corps + "}" + s[m.end():]
     bnd.write_text(s)
 
