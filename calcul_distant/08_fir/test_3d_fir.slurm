@@ -29,6 +29,11 @@ DT=$(foamDictionary system/controlDict -entry deltaT -value)
 foamDictionary system/controlDict -entry endTime -set "$(python3 -c "print($DT*$NPAS)")" > /dev/null
 foamDictionary system/controlDict -entry writeControl -set timeStep > /dev/null
 foamDictionary system/controlDict -entry writeInterval -set 100000 > /dev/null
+# réglages PIMPLE à essayer (vides = ceux du cas modèle : 12 boucles externes, 3 correcteurs de pression)
+[ -n "$NOUTER" ] && foamDictionary system/fvSolution -entry PIMPLE/nOuterCorrectors -set "$NOUTER" > /dev/null
+[ -n "$NCORR" ] && foamDictionary system/fvSolution -entry PIMPLE/nCorrectors -set "$NCORR" > /dev/null
+echo "PIMPLE : nOuterCorrectors $(foamDictionary system/fvSolution -entry PIMPLE/nOuterCorrectors -value)," \
+     "nCorrectors $(foamDictionary system/fvSolution -entry PIMPLE/nCorrectors -value), $NPAS pas"
 
 srun foamRun -parallel > log.foamRun 2>&1
 
@@ -47,3 +52,5 @@ print(f"25 tours ({pas_25_tours} pas) : {par_pas * pas_25_tours / 3600:.1f} h de
       f"{par_pas * pas_25_tours * n / 3600:.0f} cœur·h")
 EOF
 grep -m1 -A4 "FOAM FATAL" log.foamRun || true
+echo "Courant max (tous les 20 pas) :"; grep "^Courant" log.foamRun | awk 'NR%20==0 {print NR, $NF}'
+echo "Itérations PIMPLE par pas : $(python3 -c "print(round($(grep -c '^PIMPLE: Iteration' log.foamRun)/$NPAS,1))")"
