@@ -1,0 +1,6 @@
+Rotor de Blackwell à 3 godets (configuration 8 du rapport SAND76-0131 : arcs de 150°, s/d = 0,10, H = 1 m),
+même méthode que base_blackwell_bldom2 (couches limites, première maille 0,06 mm, domaine 10D / 25D / 20D).
+Mesures : couple statique run 15 (fig. 22 du rapport, 7 m/s), Cp run 17 (fig. 30).
+  gmsh -3 -setnumber useBL 1 -setnumber bl1 6e-5 -setnumber xmin -9.6 -setnumber xmax 23.1 -setnumber ymax 9.6 \
+       -format msh2 blackwellN2D.geo -o savonius2D_blackwell3_bldom2.msh
+(N = 3, aOut = 20, aIn = 10, sr = 0.10 par défaut dans blackwellN2D.geo)
