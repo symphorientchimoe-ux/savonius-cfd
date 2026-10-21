@@ -1,0 +1,5 @@
+Variante de base_v3bl_dom2 (référence de l'article) : rotor CNDT à 2 pales (Nb = 2), mêmes pales, même maillage et même domaine.
+  gmsh -3 -setnumber tm 0.004 -setnumber hb 0.0025 -setnumber htip 0.0025 -setnumber useBL 1 \
+       -setnumber bl1 1e-4 -setnumber blT 0.003 -setnumber blArbre 1 \
+       -setnumber xmin -14 -setnumber xmax 34 -setnumber ymax 14 -setnumber Nb 2 -format msh2 savonius2D.geo
+But : séparer l'effet du nombre de pales et celui de l'écartement sur le couple statique (calculs B et C).

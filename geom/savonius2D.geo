@@ -16,6 +16,9 @@ DefineConstant[ xmin = -7, xmax = 20, ymax = 7 ];
 DefineConstant[ hb = 0.0015, htip = 0.0015, hami = 0.02, hfar = 0.30, hwake = 0.07,
                 bl1 = 1.5e-4, blT = 0.003, blR = 1.2, useBL = 0, ext = 1, tm = 0,
                 blQuads = 1, blArbre = 0 ];
+// Nb : nombre de pales ; ec : écartement, décalage radial de chaque pale vers l'extérieur [m]
+// (pied de pale à ec de l'axe, bout à c + ec) ; Nb = 4 et ec = 0 : rotor CNDT
+DefineConstant[ Nb = 4, ec = 0 ];
 // tm > 0 : epaisseur de pale modelisee (et diametre du bout arrondi), pour grossir les mailles du bout
 If (tm > 0)
   t = tm;
@@ -23,18 +26,18 @@ EndIf
 
 d = Sqrt(Rb^2 - (c/2)^2);
 blades[] = {};
-For i In {0:3}
-  th = -Pi/2 + i*Pi/2;
+For i In {0:Nb-1}
+  th = -Pi/2 + i*2*Pi/Nb;
   ex = Cos(th); ey = Sin(th);
   nx = ey;      ny = -ex;          // centre de l'arc du cote amont pour la pale "avancante"
-  cx = c/2*ex + d*nx; cy = c/2*ey + d*ny;
+  cx = (c/2 + ec)*ex + d*nx; cy = (c/2 + ec)*ey + d*ny;
   dO = news; Disk(dO) = {cx, cy, 0, Rb + t/2};
   dI = news; Disk(dI) = {cx, cy, 0, Rb - t/2};
   ring() = BooleanDifference{ Surface{dO}; Delete; }{ Surface{dI}; Delete; };
   // triangle limitant l'anneau au secteur [axe -> bout de pale]
   p1 = newp; Point(p1) = {cx, cy, 0};
-  p2 = newp; Point(p2) = {cx + 3*(0 - cx), cy + 3*(0 - cy), 0};
-  p3 = newp; Point(p3) = {cx + 3*(c*ex - cx), cy + 3*(c*ey - cy), 0};
+  p2 = newp; Point(p2) = {cx + 3*(ec*ex - cx), cy + 3*(ec*ey - cy), 0};
+  p3 = newp; Point(p3) = {cx + 3*((c + ec)*ex - cx), cy + 3*((c + ec)*ey - cy), 0};
   l1 = newl; Line(l1) = {p1, p2};
   l2 = newl; Line(l2) = {p2, p3};
   l3 = newl; Line(l3) = {p3, p1};
@@ -42,12 +45,17 @@ For i In {0:3}
   tri = news; Plane Surface(tri) = {cl};
   b() = BooleanIntersection{ Surface{ring()}; Delete; }{ Surface{tri}; Delete; };
   // bout de pale arrondi (chant de la tole)
-  dt_ = news; Disk(dt_) = {c*ex, c*ey, 0, t/2};
-  b2() = BooleanUnion{ Surface{b()}; Delete; }{ Surface{dt_}; Delete; };
+  dt_ = news; Disk(dt_) = {(c + ec)*ex, (c + ec)*ey, 0, t/2};
+  If (ec > 0)
+    dr_ = news; Disk(dr_) = {ec*ex, ec*ey, 0, t/2};   // pied de pale arrondi, détaché de l'arbre
+    b2() = BooleanUnion{ Surface{b()}; Delete; }{ Surface{dt_, dr_}; Delete; };
+  Else
+    b2() = BooleanUnion{ Surface{b()}; Delete; }{ Surface{dt_}; Delete; };
+  EndIf
   blades[] += b2();
 EndFor
 sh = news; Disk(sh) = {0, 0, 0, rs};
-solid() = BooleanUnion{ Surface{blades[0]}; Delete; }{ Surface{blades[{1:3}], sh}; Delete; };
+solid() = BooleanUnion{ Surface{blades[0]}; Delete; }{ Surface{blades[{1:Nb-1}], sh}; Delete; };
 
 dr = news; Disk(dr) = {0, 0, 0, Rr};
 rotor() = BooleanDifference{ Surface{dr}; Delete; }{ Surface{solid()}; Delete; };
