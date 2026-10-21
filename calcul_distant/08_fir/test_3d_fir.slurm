@@ -1,19 +1,19 @@
 #!/bin/bash
-# Mesure du coût du cas 3D (base3d_extr_of12, ~2 M cellules) sur la grappe FIR de l'Alliance.
+# Mesure du coût du cas 3D (base3d_extr_of12 avec le maillage nc, 2,74 M cellules) sur la grappe FIR de l'Alliance.
 # Fait NPAS pas de temps à lambda = 0,8 et écrit le temps par pas et l'estimation en cœur·heures pour 25 tours.
 # Compte def-mparasch (allocation par défaut du groupe du Pr Paraschivoiu ; rrg-mparasch-ad = allocation prioritaire,
 # à garder pour les vrais calculs). Nœuds FIR : 192 cœurs, 768 Go. Copier d'abord le maillage (voir LISEZMOI.txt).
 # Usage, depuis la racine du dépôt sur FIR :  sbatch --ntasks=64 calcul_distant/08_fir/test_3d_fir.slurm
 #SBATCH --account=def-mparasch
 #SBATCH --job-name=sav3d_test
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=64
 #SBATCH --mem-per-cpu=2G
 #SBATCH --output=%x-%j.out
 
 set -eo pipefail          # pas de -u : les scripts de module et le bashrc OpenFOAM utilisent des variables non définies
-NPAS=${NPAS:-60}
+NPAS=${NPAS:-40}
 module load StdEnv/2023 gcc/12.3 openmpi/4.1.5 openfoam/12
 export FOAM_BASHRC=/dev/null     # le module définit déjà tout l environnement ; mkcase.py « source » ce fichier
 
