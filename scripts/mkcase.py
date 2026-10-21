@@ -35,11 +35,30 @@ def types_patchs(bnd):
     bnd.write_text(s)
 
 
+def paires_interfaces(bnd):
+    """Paires de patchs à coupler : AMI1/AMI2 (interface glissante) et, si présente, NC1/NC2
+    (interface fixe au sommet des pales du maillage 3D, voir maillage3d_extrusion.sh)."""
+    s = bnd.read_text()
+    return [(a, b) for a, b in (("AMI1", "AMI2"), ("NC1", "NC2")) if re.search(rf"\b{a}\s*\{{", s)]
+
+
+def couplage_of12(case):
+    """Commande OpenFOAM 10 et plus qui couple les paires d'interfaces (dictionnaire si plusieurs paires)."""
+    paires = paires_interfaces(case / "constant/polyMesh/boundary")
+    if len(paires) == 1:
+        return "createNonConformalCouples -overwrite AMI1 AMI2"
+    corps = "".join(f"    {a}_{b} {{ patches ({a} {b}); transform none; }}\n" for a, b in paires)
+    (case / "system/createNonConformalCouplesDict").write_text(
+        "FoamFile { version 2.0; format ascii; class dictionary; object createNonConformalCouplesDict; }\n"
+        f"fields no;\nnonConformalCouples\n{{\n{corps}}}\n")
+    return "createNonConformalCouples -overwrite"
+
+
 def ami_en_patch(bnd):
     """Maillage OpenFOAM fabriqué en version 8 (ex. maillage 3D extrudé) : AMI1 et AMI2 y sont des cyclicAMI.
     En version 10 et plus, ils redeviennent des patchs, que createNonConformalCouples couple ensuite."""
     s = bnd.read_text()
-    for nom in ("AMI1", "AMI2"):
+    for nom in sum(paires_interfaces(bnd), ()):
         m = re.search(rf"(\b{nom}\s*\{{)([^}}]*)\}}", s)
         assert m, f"patch {nom} absent de {bnd}"
         corps = re.sub(r"\btype\s+\w+;", "type            patch;", m.group(2))
@@ -49,9 +68,10 @@ def ami_en_patch(bnd):
 
 
 def ami_en_cyclic(bnd):
-    """Maillage fourni (ex. maillage3d_extrusion.sh) avec AMI1/AMI2 en simples patchs : OpenFOAM 8 attend des cyclicAMI."""
+    """Maillage fourni (ex. maillage3d_extrusion.sh) avec AMI1/AMI2 (et NC1/NC2) en simples patchs : OpenFOAM 8 attend des cyclicAMI."""
+    paires = paires_interfaces(bnd)
     s = bnd.read_text()
-    for nom, voisin in (("AMI1", "AMI2"), ("AMI2", "AMI1")):
+    for nom, voisin in paires + [(b, a) for a, b in paires]:
         m = re.search(rf"(\b{nom}\s*\{{)([^}}]*)\}}", s)
         assert m, f"patch {nom} absent de {bnd}"
         if "cyclicAMI" in m.group(2):
@@ -140,7 +160,7 @@ def main():
         cmds = []                   # maillage OpenFOAM déjà prêt dans le cas modèle (ex. tranche du maillage 3D)
         if (case / "constant/physicalProperties").exists():
             ami_en_patch(case / "constant/polyMesh/boundary")
-            cmds = ["createNonConformalCouples -overwrite AMI1 AMI2"]
+            cmds = [couplage_of12(case)]
         else:
             ami_en_cyclic(case / "constant/polyMesh/boundary")
     else:

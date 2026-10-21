@@ -3,3 +3,4 @@ runs/
 __pycache__/
 base3d_extr/constant/polyMesh/
 base3d_extr_of12/constant/polyMesh/
+base3d_extr_nc/constant/polyMesh/

@@ -1,18 +1,25 @@
 #!/bin/bash
 # Maillage 3D du demi-rotor par extrusion du plan 2D à couches limites (geom/savonius3D_plan.geo), avec OpenFOAM 8.
 #   étage 1 : z de 0 à H2 (hauteur des pales), plan sans l'intérieur des pales  -> parois des pales
-#   étage 2 : z de H2 à HZ (haut de la zone tournante), plan plein               -> dessus des pales = paroi
+#   étage 2 : z de H2 à HZ (haut de la zone tournante). Deux variantes (variable ETAGE2) :
+#     nc (défaut) : disque tournant pris dans le « couvercle » du plan (mailles de 3 à 5 mm, sans couches limites),
+#                   relié à l'étage 1 par une interface non conforme fixe NC1/NC2 ; la part de NC2 au-dessus de la
+#                   tôle (1,5 mm) n'est couverte par rien et sert de dessus de pale.
+#     conforme    : plan plein de l'étage 1 (couches limites prolongées au-dessus des pales). Diverge : l'air
+#                   traverse ces mailles de 0,1 mm au-dessus de la pale (Courant > 1000 en 16 pas, 21/10/2026).
 #   étage 3 : z de HZ à ZTOP, anneau fixe + couvercle fixe                        -> interface glissante au-dessus du rotor
 # z = 0 est le plan de symétrie à mi-hauteur du rotor (patch sym), ZTOP le haut du domaine (patch top).
 # Usage : bash scripts/maillage3d_extrusion.sh PLAN.msh DOSSIER_SORTIE [NZ1 NZ2 NZ3 [R1 R2 R3]]
 #   R1 R2 R3 : rapport entre couches voisines de chaque étage, en partant du haut (défaut 1.07 0.83 0.77).
 #   Maillage resserré au sommet des pales (~1 mm de part et d'autre, 2,9 M cellules) : 30 15 10 1.15 0.75 0.77
-# Le dossier de sortie reçoit constant/polyMesh (patches inlet outlet sides sym top blades AMI1 AMI2, zone rotor).
+# Le dossier de sortie reçoit constant/polyMesh (patches inlet outlet sides sym top blades AMI1 AMI2 [NC1 NC2], zone rotor).
+# Exemple : ETAGE2=conforme bash scripts/maillage3d_extrusion.sh plan.msh sortie 30 15 10 1.15 0.75 0.77
 set -euo pipefail
 MSH=$(realpath "$1"); OUT=$(realpath -m "$2")
 NZ1=${3:-20}; NZ2=${4:-8}; NZ3=${5:-10}
 H2=0.5; HZ=0.8; ZTOP=3.0
 R1=${6:-1.07}; R2=${7:-0.83}; R3=${8:-0.77}   # rapport entre couches voisines, en partant du haut de chaque étage (extrusion vers le bas)
+ETAGE2=${ETAGE2:-nc}
 set --; set +eu; source "${FOAM_BASHRC:-$HOME/OpenFOAM/OpenFOAM-8/etc/bashrc}"; set -eu   # sans arguments : le bashrc les interprète
 W=$(mktemp -d -p "${TMPDIR:-/tmp}")
 log() { echo ">> $*"; }
@@ -72,8 +79,13 @@ sous_plan() {  # $1 nom, $2 zones gardées
     subsetMesh -case "$C" garde -overwrite > "$C/log.subsetMesh" 2>&1
 }
 sous_plan A1 "fluide anneau"
-sous_plan A2 "fluide pale anneau"
 sous_plan B  "anneau couvercle"
+if [ "$ETAGE2" = nc ]; then
+    sous_plan A2 "anneau"
+    sous_plan C  "couvercle"
+else
+    sous_plan A2 "fluide pale anneau"
+fi
 
 # A1 : faces exposées = parois des pales (côté fluide) et bord intérieur de l'anneau (interface fixe)
 topo "$W/A1" "{ name exp; type faceSet; action new; source patchToFace; sourceInfo { name oldInternalFaces; } }
@@ -84,6 +96,11 @@ topo "$W/A1" "{ name exp; type faceSet; action new; source patchToFace; sourceIn
   { name ami2; type faceSet; action new; source cellToFace; sourceInfo { set ca; option all; } }
   { name ami2; type faceSet; action subset; source faceToFace; sourceInfo { set exp; } }"
 patch_depuis_set "$W/A1" "blades:murs:wall" "AMI2:ami2:patch"
+if [ "$ETAGE2" = nc ]; then
+# A2 : anneau seul, bord intérieur = côté fixe de l'interface glissante ; C : couvercle seul, bord = côté tournant
+renommer "$W/A2" "oldInternalFaces:AMI2"
+renommer "$W/C" "oldInternalFaces:AMI1"
+else
 # A2 : faces exposées = bord intérieur de l'anneau ; faces du bas sous les pales -> dessus des pales
 topo "$W/A2" "{ name cp; type cellSet; action new; source zoneToCell; sourceInfo { name pale; } }
   { name toit; type faceSet; action new; source cellToFace; sourceInfo { set cp; option all; } }
@@ -91,6 +108,7 @@ topo "$W/A2" "{ name cp; type cellSet; action new; source zoneToCell; sourceInfo
   { name toit; type faceSet; action subset; source faceToFace; sourceInfo { set bas; } }"
 patch_depuis_set "$W/A2" "blades:toit:wall"
 renommer "$W/A2" "oldInternalFaces:AMI2"
+fi
 # B : le bas du couvercle est le côté fixe de l'interface au-dessus du rotor
 topo "$W/B" "{ name cc; type cellSet; action new; source zoneToCell; sourceInfo { name couvercle; } }
   { name couv; type faceSet; action new; source cellToFace; sourceInfo { set cc; option all; } }
@@ -100,16 +118,35 @@ patch_depuis_set "$W/B" "AMI2:couv:patch"
 
 # ---------- extrusions ----------
 extruder "$W/A1" "$W/S1" "bas" $H2 $NZ1 $R1
-extruder "$W/A2" "$W/S2" "bas blades" $(python3 -c "print($HZ-$H2)") $NZ2 $R2
+if [ "$ETAGE2" = nc ]; then
+    extruder "$W/A2" "$W/S2" "bas" $(python3 -c "print($HZ-$H2)") $NZ2 $R2
+    extruder "$W/C"  "$W/S2c" "bas" $(python3 -c "print($HZ-$H2)") $NZ2 $R2
+    ETAGES="S1 S2 S2c S3"
+else
+    extruder "$W/A2" "$W/S2" "bas blades" $(python3 -c "print($HZ-$H2)") $NZ2 $R2
+    ETAGES="S1 S2 S3"
+fi
 extruder "$W/B"  "$W/S3" "bas AMI2" $(python3 -c "print($ZTOP-$HZ)") $NZ3 $R3
-for s in S1 S2 S3; do log "$s : $(checkMesh -case "$W/$s" 2>&1 | grep -m1 'cells:') ; $(grep -c . "$W/$s/log.extrudeMesh") lignes de journal"; done
+for s in $ETAGES; do log "$s : $(checkMesh -case "$W/$s" 2>&1 | grep -m1 'cells:') ; $(grep -c . "$W/$s/log.extrudeMesh") lignes de journal"; done
 # extrudeMesh descend selon la normale du plan (vers -z) : les faces d'origine (bas, blades...) finissent en bas,
 # les nouvelles faces (haut) en z = 0 ; on remonte chaque étage à sa place
 transformPoints -case "$W/S1" -translate "(0 0 $H2)" > /dev/null 2>&1
 transformPoints -case "$W/S2" -translate "(0 0 $HZ)" > /dev/null 2>&1
+[ "$ETAGE2" = nc ] && transformPoints -case "$W/S2c" -translate "(0 0 $HZ)" > /dev/null 2>&1
 transformPoints -case "$W/S3" -translate "(0 0 $ZTOP)" > /dev/null 2>&1
 
 # ---------- assemblage ----------
+if [ "$ETAGE2" = nc ]; then
+# dessus de l'étage 1 : partie tournante -> NC1 (fixe par rapport au disque C au-dessus) ; anneau -> collé à l'étage 2
+topo "$W/S1" "{ name ct; type cellSet; action new; source cylinderToCell; sourceInfo { p1 (0 0 -10); p2 (0 0 10); radius 0.9; } }
+  { name dessus; type faceSet; action new; source cellToFace; sourceInfo { set ct; option all; } }
+  { name h; type faceSet; action new; source patchToFace; sourceInfo { name haut; } }
+  { name dessus; type faceSet; action subset; source faceToFace; sourceInfo { set h; } }"
+patch_depuis_set "$W/S1" "NC1:dessus:patch"
+renommer "$W/S1" "bas:sym" "haut:int12a"
+renommer "$W/S2" "bas:int12b" "haut:int23a"
+renommer "$W/S2c" "bas:NC2" "AMI1 haut:AMI1"
+else
 # dessus de l'étage 2 : partie tournante (r < Rr) -> côté tournant de l'interface ; reste -> collé à l'étage 3
 topo "$W/S2" "{ name ct; type cellSet; action new; source cylinderToCell; sourceInfo { p1 (0 0 -10); p2 (0 0 10); radius 0.9; } }
   { name dessus; type faceSet; action new; source cellToFace; sourceInfo { set ct; option all; } }
@@ -118,11 +155,13 @@ topo "$W/S2" "{ name ct; type cellSet; action new; source cylinderToCell; source
 patch_depuis_set "$W/S2" "AMI1top:dessus:patch"
 renommer "$W/S1" "bas:sym" "haut:int12a"
 renommer "$W/S2" "bas:int12b" "haut:int23a" "AMI1 AMI1top:AMI1"
+fi
 renommer "$W/S3" "bas:int23b" "haut:top"
 mergeMeshes "$W/S1" "$W/S2" -overwrite > "$W/log.merge12" 2>&1
 stitchMesh -case "$W/S1" -perfect int12a int12b -overwrite > "$W/log.stitch12" 2>&1
 ranger() { if [ -d "$W/S1/0/polyMesh" ]; then rm -rf "$W/S1/constant/polyMesh"; mv "$W/S1/0/polyMesh" "$W/S1/constant/"; fi; rm -rf "$W/S1/0"; }   # stitchMesh écrit dans 0/
 ranger
+[ "$ETAGE2" = nc ] && mergeMeshes "$W/S1" "$W/S2c" -overwrite > "$W/log.merge12c" 2>&1
 mergeMeshes "$W/S1" "$W/S3" -overwrite > "$W/log.merge13" 2>&1
 stitchMesh -case "$W/S1" -perfect int23a int23b -overwrite > "$W/log.stitch23" 2>&1
 ranger
@@ -138,7 +177,7 @@ python3 - "$W/S1/constant/polyMesh/boundary" <<'PY'
 import re, sys, pathlib
 p = pathlib.Path(sys.argv[1]); s = p.read_text()
 types = {"inlet": "patch", "outlet": "patch", "sides": "symmetry", "top": "symmetry", "sym": "symmetryPlane",
-         "blades": "wall", "AMI1": "patch", "AMI2": "patch"}
+         "blades": "wall", "AMI1": "patch", "AMI2": "patch", "NC1": "patch", "NC2": "patch"}
 noms = re.findall(r"\n\s{4}(\w+)\n\s{4}\{", s)
 for nom in noms:
     m = re.search(rf"(\n\s{{4}}{nom}\n\s{{4}}\{{)([^}}]*)\}}", s)

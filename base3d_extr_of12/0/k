@@ -51,7 +51,7 @@ boundaryField
     {
         type            symmetry;
     }
-    "AMI(1|2)"
+    "(AMI|NC)(1|2)"
     {
         type            zeroGradient;
     }

@@ -55,7 +55,7 @@ boundaryField
     {
         type            symmetry;
     }
-    "AMI(1|2)"
+    "(AMI|NC)(1|2)"
     {
         type            movingWallSlipVelocity;
         value           uniform (0 0 0);
