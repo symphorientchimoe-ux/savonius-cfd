@@ -97,6 +97,7 @@ def main():
     ap.add_argument("--static", type=float, default=None,
                     help="couple statique : rotor bloqué à cet angle [deg] (tsr ignoré)")
     ap.add_argument("--tstat", type=float, default=10.0, help="durée simulée après la rampe en statique [s]")
+    ap.add_argument("--tpos", type=float, default=0.1, help="durée de la mise en position du rotor en statique [s]")
     ap.add_argument("--dt", type=float, default=0.00185441, help="pas de temps en statique [s] (celui de lambda = 0,8)")
     ap.add_argument("--msh", default=None,
                     help="maillage gmsh ; défaut : celui nommé dans <base>/MAILLAGE, sinon geom/savonius2D.msh")
@@ -122,7 +123,7 @@ def main():
         end = a.tramp + a.revs * period
         steps_per_rev = round(360 / a.deg)
     else:
-        # rotor bloqué : le maillage tourne de l'angle voulu pendant les 0,1 premières secondes
+        # rotor bloqué : le maillage tourne de l'angle voulu pendant les tpos premières secondes (0,1 s par défaut)
         # (vent encore presque nul), puis reste immobile
         a.tsr, omega, dt = 0.0, 0.0, a.dt
         period, end = a.tstat, a.tramp + a.tstat
@@ -150,7 +151,7 @@ def main():
             s = s.replace(key, val)
         p.write_text(s)
     if a.static is not None:
-        tp, gap = 0.1, 1e-4
+        tp, gap = a.tpos, 1e-4
         w = math.radians(a.static) / (tp + gap / 2)
         p = case / "constant/dynamicMeshDict"
         txt, n = re.subn(r"omega\s+table\s*\(.*?\);", f"omega table ((0 {w:.8g}) ({tp} {w:.8g}) ({tp + gap:g} 0) (1e6 0));",

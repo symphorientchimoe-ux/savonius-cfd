@@ -113,6 +113,7 @@ tail -5 "$LOG"
 
 # dernier temps écrit et état
 if [ "$NP" -gt 1 ]; then TDIR=processor0; else TDIR=.; fi
+[ -d "processors$NP" ] && TDIR="processors$NP"     # écriture « collated » (FOAM_FILEHANDLER=collated, FIR)
 LAST=$(ls -1 "$TDIR" | grep -E '^[0-9.eE+-]+$' | sort -g | tail -1)
 # OpenFOAM 12 colle l'unité aux temps (« Time = 34.38s ») : on ne garde que le nombre
 END=$(foamDictionary system/controlDict -entry endTime -value | sed 's/[^0-9.eE+-]*$//')

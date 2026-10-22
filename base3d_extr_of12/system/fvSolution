@@ -60,8 +60,8 @@ PIMPLE
 {
     correctPhi          yes;
     correctMeshPhi      no;     // OpenFOAM 12, rotation de corps solide (comme le tutoriel mixerVessel2D)
-    nOuterCorrectors    12;
-    nCorrectors         3;
+    nOuterCorrectors    4;      // 12 à l origine ; 4 et 2 testés sur FIR le 21/10 : moment à 0,35 % près, 1,8 fois plus rapide
+    nCorrectors         2;
     nNonOrthogonalCorrectors 1;
     turbOnFinalIterOnly false;
 
