@@ -27,7 +27,7 @@ mkdir -p "$(dirname "$CASE")"
 echo ">> $NOM, passage $PASSE/$PASSES_MAX, $SLURM_NTASKS processus, $(date)"
 # ARGS non cité : plusieurs options
 bash calcul_distant/commun/lancer_cas.sh "$CASE" $ARGS --U "$U" --np "$SLURM_NTASKS" --budget "$BUDGET" \
-    --base base3d_extr_of12
+    --base "${BASE:-base3d_extr_of12}"
 ETAT=$(cat "$CASE/ETAT" 2>/dev/null || echo erreur)
 echo ">> état : $ETAT"
 grep "^Courant" "$CASE"/log.pimpleFoam.* | tail -1
